@@ -5,7 +5,7 @@ import matplotlib as mpl
 import numpy as np
 
 def three_dim_plot(*, xv, tv, I, label):
-    "Plot solution (I) in a 3 dimensions."
+    """Plot solution (I) in a 3 dimensions."""
     fig = plt.figure()
     fig.suptitle(label)
     ax = fig.gca(projection="3d")
@@ -16,7 +16,7 @@ def three_dim_plot(*, xv, tv, I, label):
     plt.show()
 
 def sub(*, x, I, t, L, t_index, label):
-    "Make subplots at given timestep indices."
+    """Make subplots at given timestep indices."""
     subplts = len(t_index)
     fig, axs = plt.subplots(int(subplts/2), int(subplts/2))
     precision = 3 # Precision to round off the times in the titles below. 
