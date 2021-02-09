@@ -1,61 +1,64 @@
-"""Numerical solution using the given difference method in task 1a."""
+"""Modify code from a) with different boundary conditions.
+
+In this case we have Dirichlet on both sides, which corresponds to 
+the simple case example in 3.1 in BO's note.
+"""
 
 from scipy.sparse import spdiags # Make sparse matrices with scipy.
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
 
-
 def f(x):
     """Right hand side of 1D Poisson equation."""
     return np.cos(2*np.pi*x) + x
 
 
-def anal_solution(x, alpha, sigma):
+def anal_solution(x):
     """Analytical solution of the Possion equation with given Neumann BC."""
-    return -1/(4*np.pi**2)*np.cos(2*np.pi*x) + 1/6*x**3 + (sigma - 1/2)*x + alpha + 1/(4*np.pi**2)
+    return -1/(4*np.pi**2)*np.cos(2*np.pi*x) + 1/6*x**3 + (-1/6)*x + (1 + 1/(4*np.pi**2))
 
 
-def num_solution(x, M, alpha, sigma):
+def num_solution(x, M):
     """Numerical solution of the Possion equation with given Neumann BC."""
 
     h = 1/(M+1)
 
     # Construct Ah. 
-    data = np.array([np.full(M+1, 1), np.full(M+1, -2), np.full(M+1, 1)])
+    data = np.array([np.full(M, 1), np.full(M, -2), np.full(M, 1)])
     diags = np.array([-1, 0, 1])
-    Ah = spdiags(data, diags, M+1, M+1).toarray()*1/h**2
-    Ah[-1, -3] = -h/2
-    Ah[-1, -2] = 2*h
-    Ah[-1, -1] = -3*h/2
+    Ah = spdiags(data, diags, M, M).toarray()*1/h**2
 
     # Construct f.
-    f_vec = np.full(M+1, f(x[1:]))
-    f_vec[0] = f_vec[0] - alpha/h**2
-    f_vec[-1] = sigma
+    f_vec = np.full(M, f(x[1:-1]))
+    f_vec[0] = f_vec[0] - 1/h**2
+    f_vec[-1] = f_vec[-1] - 1/h**2
 
     # Solve linear system. 
     Usol = la.solve(Ah, f_vec)
 
     # Add left Dirichlet condition to solution.
-    Usol = np.insert(Usol, 0, alpha)
+    Usol = np.insert(Usol, 0, 1)
+
+    # Add right Dirichlet condtion to solution.
+    Usol = np.insert(Usol, -1, 1)
 
     return Usol
 
-M = 20
+M = 1000
 x = np.linspace(0, 1, M+2) # Make 1D grid.
 
-alpha = 0
-sigma = 0
+num_solution(x, M)
 
 def check():
     """Encapsulate the plotting under development for ease of use."""
-    plt.plot(x, num_solution(x, M, alpha, sigma), label="Num", color = "red")
-    plt.plot(x, anal_solution(x, alpha, sigma), label="An", color = "black", linestyle = "dotted")
+    plt.plot(x, num_solution(x, M), label="Num", color = "red")
+    plt.plot(x, anal_solution(x), label="An", color = "black", linestyle = "dotted")
     plt.legend()
     plt.show()
     # Looks good!
 
+check()
 
 #### Make convergence plots for both norms. 
 def disc_l2_norm(V):
@@ -81,8 +84,8 @@ discrete_error = np.zeros(len(M))
 discrete_errorF = np.zeros(len(M))
 for i, m in enumerate(M):
     x = np.linspace(0, 1, m+2)
-    Usol = num_solution(x, M = m, alpha = alpha, sigma = sigma)
-    analsol = anal_solution(x, alpha, sigma)
+    Usol = num_solution(x, M = m)
+    analsol = anal_solution(x)
     discrete_error[i], discrete_errorF[i] = e_l(Usol, analsol)
 
 fig = plt.figure()
@@ -92,7 +95,6 @@ ax.set_yscale("log")
 ax.plot(M, discrete_error, label="el", color = "red")
 ax.plot(M, discrete_errorF, label="F", color = "black", linestyle = "dotted")
 plt.legend()
-plt.grid() # Looks like it decreases with two orders!
+plt.grid() # Looks like this is of convergence order 1. 
+# I expected it to be of order 2, since we have used a central difference. Not sure why it does not get this order. 
 plt.show() 
-
-# I do not understand how the norm with the integral should be implemented?!
