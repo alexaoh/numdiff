@@ -36,6 +36,9 @@ def num_solution(x, M):
     f_vec[0] = (h/2)*f_vec[0]      #B.C sigma_0 = 0
     f_vec[-1] = (h/2)*f_vec[-1] - 1/2 #BC sigma_1 = 1/2
     
+    trapezoidal_integral = sum(f(x[1:-1]))*h + (h/2)*(f(x[0])+f(x[-1])) 
+    print(trapezoidal_integral) #it's approx 0.5 as it should
+    
     # Solve linear system. 
     Usol = la.solve(Ah, f_vec) #Ah is a singular matrix. Can it be solved in another manner?
     print(Usol)
@@ -52,7 +55,6 @@ def check():
     #plt.plot(x, anal_solution(x), label="An", color = "black", linestyle = "dotted")
     plt.legend()
     plt.show()
-    # Looks good!
 
 check()  #Gives an error; numpy.linalg.LinAlgError: Singular Matrix
 '''
