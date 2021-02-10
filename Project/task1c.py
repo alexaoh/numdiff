@@ -8,16 +8,17 @@ from scipy.sparse import spdiags # Make sparse matrices with scipy.
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
+from utils import SOR, forward_subs, backward_subs, mylu
 
 def f(x):
     """Right hand side of 1D Poisson equation."""
     return np.cos(2*np.pi*x) + x
 
-'''
+
 def anal_solution(x):
     """Analytical solution of the Possion equation with given Neumann BC."""
-    return -1/(4*np.pi**2)*np.cos(2*np.pi*x) + 1/6*x**3 + (-1/6)*x + (1 + 1/(4*np.pi**2))
-'''
+    return -1/(4*np.pi**2)*np.cos(2*np.pi*x) + 1/6*x**3 # Utelate den siste konstanten som kan være hva som helst. 
+
 
 def num_solution(x, M):
     """Numerical solution of the Possion equation with given Neumann BC."""
@@ -40,19 +41,30 @@ def num_solution(x, M):
     print(trapezoidal_integral) #it's approx 0.5 as it should
     
     # Solve linear system. 
-    Usol = la.solve(Ah, f_vec) #Ah is a singular matrix. Can it be solved in another manner?
-    print(Usol)
+    #Usol = la.solve(Ah, f_vec) #Ah is a singular matrix. Can it be solved in another manner?
+
+    # Trying to solve it with an iterative method, e.g. SOR.
+    # This gives a solution (with high error) and it does not makes sense in the right endpoint. 
+    # We need some more information about the solution to avoid it from growing this large!!
+    Usol = SOR(Ah, f_vec, 1.2, np.zeros_like(f_vec), 1, 1300)
+
+    # Trying to solve it with a direct method other than la from Numpy. 
+    # The direct method does obviously not work, as seen. 
+    # LU, P = mylu(Ah)
+    # c = forward_subs(LU, P, f_vec)
+    # Usol = backward_subs(LU, P, c)
+    # print(Usol)
     return Usol
 
 M = 1000
 x = np.linspace(0, 1, M+2) # Make 1D grid.
 
-num_solution(x, M)
+#num_solution(x, M)
 
 def check():
     """Encapsulate the plotting under development for ease of use."""
-    plt.plot(x, num_solution(x, M), label="Num", color = "red")
-    #plt.plot(x, anal_solution(x), label="An", color = "black", linestyle = "dotted")
+    #plt.plot(x, num_solution(x, M), label="Num", color = "red")
+    plt.plot(x, anal_solution(x), label="An", color = "black", linestyle = "dotted")
     plt.legend()
     plt.show()
 
