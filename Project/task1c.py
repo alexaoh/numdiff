@@ -1,7 +1,7 @@
 """Modify code from a) with different boundary conditions.
 
 In this case we have Neumann on both sides, which corresponds to 
-the simple case example in 3.1.2 in BO's note.
+the simple case example in 3.1.2 in BO's note. 
 """
 
 from scipy.sparse import spdiags # Make sparse matrices with scipy.
