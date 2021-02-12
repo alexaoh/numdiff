@@ -9,6 +9,7 @@ import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
 from utils import SOR, forward_subs, backward_subs, mylu
+from scipy.sparse.linalg import cg
 
 def f(x):
     """Right hand side of 1D Poisson equation."""
@@ -32,6 +33,7 @@ def num_solution(x, M):
     Ah[0,0] = Ah[-1,-1] = -h
     Ah[0,1] = Ah[-1,-2] = h
     
+    print(Ah)
     # Construct f.
     f_vec = np.full(M+2, f(x))
     f_vec[0] = (h/2)*f_vec[0]      #B.C sigma_0 = 0
@@ -46,7 +48,7 @@ def num_solution(x, M):
     # Trying to solve it with an iterative method, e.g. SOR.
     # This gives a solution (with high error) and it does not makes sense in the right endpoint. 
     # We need some more information about the solution to avoid it from growing this large!!
-    Usol = SOR(Ah, f_vec, 1.2, np.zeros_like(f_vec), 1, 1300)
+    #Usol = SOR(Ah, f_vec, 1.2, np.zeros_like(f_vec), 1, 1300)
 
     # Trying to solve it with a direct method other than la from Numpy. 
     # The direct method does obviously not work, as seen. 
@@ -54,16 +56,19 @@ def num_solution(x, M):
     # c = forward_subs(LU, P, f_vec)
     # Usol = backward_subs(LU, P, c)
     # print(Usol)
+
+    Usol = cg(Ah, f_vec)[0]
+    print(Usol)
     return Usol
 
-M = 1000
+M = 150
 x = np.linspace(0, 1, M+2) # Make 1D grid.
 
-#num_solution(x, M)
+num_solution(x, M)
 
 def check():
     """Encapsulate the plotting under development for ease of use."""
-    #plt.plot(x, num_solution(x, M), label="Num", color = "red")
+    plt.plot(x, num_solution(x, M), label="Num", color = "red")
     plt.plot(x, anal_solution(x), label="An", color = "black", linestyle = "dotted")
     plt.legend()
     plt.show()
