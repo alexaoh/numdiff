@@ -41,7 +41,7 @@ def num_solution(x, M):
     Usol = np.insert(Usol, 0, 1)
 
     # Add right Dirichlet condtion to solution.
-    Usol = np.insert(Usol, -1, 1)
+    Usol = np.append(Usol, 1)
 
     return Usol
 
