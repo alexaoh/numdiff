@@ -1,4 +1,3 @@
-"""Numerical solution using the given difference method in task 1d."""
 
 from scipy.sparse import spdiags # Make sparse matrices with scipy.
 import numpy as np
@@ -16,8 +15,8 @@ def anal_solution(x, epsilon):
     return np.exp(-(1/epsilon)*(x-0.5)**2)
 
 
-def num_solution(x, M, epsilon): #This is a second order method, we also need a first order method
-    """Numerical solution of the Possion equation with Dirichlet BC. given by the manufactured solution"""
+def num_sol_second_order(x, M, epsilon): #This is a second order method, using central difference
+    """Second order numerical solution of the Possion equation with Dirichlet BC. given by the manufactured solution"""
 
     h = 1/(M+1)
 
@@ -46,9 +45,70 @@ def num_solution(x, M, epsilon): #This is a second order method, we also need a 
     
     return Usol
 
+def num_sol_first_order(x,M,epsilon):
+    """First order numerical solution of the Possion equation with Dirichlet B.C. given by the manufactured solution
+        Using a forward difference scheme"""
+    h = 1/(M+1)
+
+    #Construct Dirichlet boundary condition from manuactured solution
+    alpha = anal_solution(0,epsilon)
+    beta = anal_solution(1,epsilon)
+    
+    # Construct Ah. 
+    data = np.array([np.full(M, 1), np.full(M, -2), np.full(M, 1)])
+    diags = np.array([0, 1, 2])
+    Ah = spdiags(data, diags, M, M).toarray()*1/h**2
+    
+    #are these the right boundary conditions? Here I have not used alpha at all(?) - seems wrong to me
+    f_vec = np.full(M,f(x[1:-1],epsilon))
+    f_vec[-2] = f_vec[-2] - beta/h**2
+    f_vec[-1] = f_vec[-1] + 2*beta/h**2
+
+    # Solve linear system. 
+    Usol = la.solve(Ah, f_vec)
+
+    # Add left Dirichlet condition to solution.
+    Usol = np.insert(Usol, 0, alpha)
+
+    # Add right Dirichlet condtion to solution.
+    Usol = np.append(Usol,beta)
+    return Usol
+
+#M = 40
+#x = np.linspace(0, 1, M+2) # Make 1D grid.
+epsilon = 0.01 #may consider using this as a global variable, so we dont have to use it as input everywhere
+'''
+Usol_1 = num_sol_first_order(x,M,epsilon)
+Usol_2 = num_sol_second_order(x,M,epsilon)
+plt.plot(x,Usol_1,label="num1")
+plt.plot(x,Usol_2,label="num2")
+plt.plot(x,anal_solution(x,epsilon),label="an")
+plt.legend()
+plt.show()
+'''
+### Uniform mesh refinement UMR, here using disc_error
+M_list = np.linspace(20,1000,20,dtype=int)
+h_list = 1/(M_list+1)
+
+e_1 = np.zeros(len(M_list))
+e_2 = np.zeros(len(M_list))
+for i in range(len(M_list)):
+    x = np.linspace(0,1,M_list[i]+2)
+    u = anal_solution(x,epsilon)
+    e_1[i] = la.norm(num_sol_first_order(x,M_list[i],epsilon) - u)/la.norm(u)
+    e_2[i] = la.norm(num_sol_second_order(x,M_list[i],epsilon) - u)/la.norm(u)
+
+plt.plot(M_list,e_1,label="l2_first")
+plt.plot(M_list,8*h_list,label='O(h)',linestyle='dashed')
+plt.plot(M_list,10*h_list**2,label="O(h^2)",linestyle='dashed')
+plt.plot(M_list,e_2,label="l2_second")
+plt.yscale('log')
+plt.xscale('log')
+plt.legend()
+plt.show()
+
 
 ##---------Starting on AMR--------------
-
 def coeff_stencil(i,h): #i can go from i=1 to i=M
     if i==1:
         d_2m = 2*h[0] #Setter denne verdien (vet egt. ikke h_-1)
@@ -121,12 +181,11 @@ def AMR_average(x0,steps):  #using average
     u = anal_solution(X_M[-1],epsilon)
     disc_error[-1] = la.norm(Usol_M[-1]-u)/la.norm(u)
     return Usol_M, X_M, disc_error
-    
-M = 8
-x = np.linspace(0, 1, M+2) # Make 1D grid.
-epsilon = 0.01 #may consider using this as a global variable, so we dont have to use it as input everywhere
-steps = 3
 
+
+
+steps = 3
+'''
 #Test with a plot
 U, X, disc_error = AMR_average(x,steps)
 for i in range(steps+1):
@@ -135,3 +194,4 @@ for i in range(steps+1):
 plt.plot(X[-1],anal_solution(X[-1],epsilon),label="An",linestyle='dotted')
 plt.legend()
 plt.show()      ### Think it is somethin wrong with the stencil, cant see what excactly
+'''
