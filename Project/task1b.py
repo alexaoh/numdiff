@@ -5,6 +5,8 @@ the simple case example in 3.1 in BO's note.
 """
 
 from scipy.sparse import spdiags # Make sparse matrices with scipy.
+from scipy.interpolate import interp1d 
+from scipy.integrate import quad
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
@@ -58,7 +60,7 @@ def check():
     plt.show()
     # Looks good!
 
-check()
+#check()
 
 #### Make convergence plots for both norms. 
 def disc_l2_norm(V):
@@ -79,22 +81,46 @@ def e_l(U, u):
     # Decide which to use! (Perhaps ask if we are allowed to use functions from numpy in general). 
     return disc_l2_norm(u-U)/disc_l2_norm(u), la.norm(u-U)/la.norm(u)
 
+def cont_L2_norm(v, left, right):
+    """Continuous L2 norm of v(x) between left and right. """
+    integrand = lambda x: v(x)**2
+    return np.sqrt(quad(integrand, left, right)[0])
+
+def e_L(U, u, left, right):
+    """Relative error e_L.
+    
+    U: Approximate numerical solution.
+    u: Analytical solution. 
+    """
+    f = lambda x : u(x) - U(x)
+    numer = cont_L2_norm(f, left, right)
+    denom = cont_L2_norm(u, left, right)
+
+    return numer/denom
+
+
 M = np.arange(2, 1012, 10, dtype = int)
 discrete_error = np.zeros(len(M))
 discrete_errorF = np.zeros(len(M))
+cont_error = np.zeros(len(M))
+
 for i, m in enumerate(M):
     x = np.linspace(0, 1, m+2)
     Usol = num_solution(x, M = m)
     analsol = anal_solution(x)
     discrete_error[i], discrete_errorF[i] = e_l(Usol, analsol)
 
+    interpU = interp1d(x, Usol, kind = 'cubic')
+    cont_error[i] = e_L(interpU, anal_solution, x[0], x[-1])
+
 fig = plt.figure()
 ax = fig.add_subplot(111)
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.plot(M, discrete_error, label="el", color = "red")
-ax.plot(M, discrete_errorF, label="F", color = "black", linestyle = "dotted")
+ax.plot(M, discrete_errorF, label="e_l", color = "blue")
+ax.plot(M, cont_error, label = "e_L2", color = "red", linestyle = "dotted")
 plt.legend()
 plt.grid() # Looks like this is of convergence order 1. 
 # I expected it to be of order 2, since we have used a central difference. Not sure why it does not get this order. 
+plt.savefig("loglogtask1b.pdf")
 plt.show() 
