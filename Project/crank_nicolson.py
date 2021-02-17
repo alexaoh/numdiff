@@ -1,7 +1,7 @@
 from scipy.sparse import spdiags # Make sparse matrices with scipy.
 import numpy as np
 
-def crank_nicolson(V, x, t, M, N, g0, g1):
+def crank_nicolson(V, x, t, M, N, g0 = 0, g1 = 0):
     """Crank-Nicolson's method.
 
     V: Grid.
@@ -40,3 +40,27 @@ def crank_nicolson(V, x, t, M, N, g0, g1):
         
         # Could do the two last steps in the same step. 
     return X
+
+    # Do not think we will use the function above, but will leave it here for now, just in case. 
+
+def trapezoidal_method(V, Q, t, h): # Could/should probably be further generalized later. 
+    """Solves \dot{V} = \frac{1}{h^2}QV on time axis t.
+    
+    V: Grid to solve on.
+    Q: Matrix in right hand side of equation to solve. 
+    t: Time axis.
+    N: Steps in time.
+    h: Step length in x.
+    """
+
+    U = V.copy()
+    k = t[1]-t[0]
+    M = Q.shape[0]
+    r = k/h**2
+    for n in range(len(t)):
+        lhs = (np.identity(M) - (r/2)*Q)
+        rhs = (np.identity(M) + (r/2)*Q)*U[1:-1, n]
+        l = np.linalg.solve(lhs, rhs)
+        U[1:-1, n+1] = l
+    return U
+    
