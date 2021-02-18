@@ -35,6 +35,8 @@ Q = spdiags(data, diags, M+1, M+1).toarray()
 # How is this done/what is the convergence plot?
 
 def centralDiff():
+    ''' Use central differences + trapezoidal '''
+
     # Construct Q
     M = 50 # Internal points in x dimension.
     N = 500 # Internal points in t dimension.
@@ -55,9 +57,15 @@ def centralDiff():
     print("sol:")
     print(sol)
 
+    # Plotting to check, looks promising.
+    # Maybe alex has some fancy plotting methods?
     plt.plot(xGrid,sol[0,:])
     plt.plot(xGrid,sol[5,:])
     plt.plot(xGrid,sol[10,:])
+    plt.plot(xGrid, sol[20,:])
+    plt.plot(xGrid, sol[40,:])
+    plt.plot(xGrid, sol[-1,:])
+
     plt.show()
 
 
