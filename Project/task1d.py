@@ -9,12 +9,12 @@ def f(x):
     return epsilon**(-2)*np.exp(-(1/epsilon)*(x-0.5)**2)*(4*x**2 - 4*x + 1 - 2*epsilon)
 
 
-def anal_solution(x, epsilon):
+def anal_solution(x):
     """Manufactured solution of the Poisson equation with Dirichlet BC."""
     return np.exp(-(1/epsilon)*(x-0.5)**2)
 
 
-def num_sol_second_order(x, M, epsilon): #This is a second order method, using central difference
+def num_sol_second_order(x, M): #Second order method using central difference
     """Second order numerical solution of the Possion equation with Dirichlet B.C. given by the manufactured solution."""
 
     h = 1/(M+1)
@@ -44,9 +44,8 @@ def num_sol_second_order(x, M, epsilon): #This is a second order method, using c
     
     return Usol
 
-def num_sol_first_order(x,M,epsilon):
+def num_sol_first_order(x,M): #first order using forward difference
     """First order numerical solution of the Possion equation with Dirichlet B.C.,
-    
     given by the manufactured solution. Using a forward difference scheme.
     """
     h = 1/(M+1)
