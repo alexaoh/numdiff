@@ -1,4 +1,4 @@
-from scipy.sparse import spdiags # Make sparse matrices with scipy.
+from scipy.sparse import spdiags,diags # Make sparse matrices with scipy.
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
@@ -73,17 +73,7 @@ def num_sol_first_order(x,M): #first order using forward difference
     Usol = np.append(Usol,beta)
     return Usol
 
-M = 20
-x = np.linspace(0, 1, M+2) # Make 1D grid.
-
-Usol_1 = num_sol_first_order(x,M)
-Usol_2 = num_sol_second_order(x,M)
-plt.plot(x,Usol_1,label="num1")
-plt.plot(x,Usol_2,label="num2")
-plt.plot(x,anal_solution(x),label="an")
-plt.legend()
-plt.show()
-
+'''
 ### Uniform mesh refinement UMR, here using disc_error
 M_list = np.linspace(20,1000,20,dtype=int)
 h_list = 1/(M_list+1)
@@ -105,12 +95,20 @@ plt.xscale('log')
 plt.legend()
 plt.grid()
 plt.show()
+'''
+
+##--------- AMR--------------
+# works better now. 
+# problems; 
+# 1) Have to discard U_-1 and set h_-1=h_0
+# 2) The error is increasing at first step
+# 3) Too much refinement for each step, can we reduce this somehow
 
 
-##---------Starting on AMR--------------
 def coeff_stencil(i,h): #i can go from i=1 to i=M
+    #d_p, d_m, d_2m = d_i+1, d_i-1, d_i-2
     if i==1:
-        d_2m = 2*h[0] #Setter denne verdien (vet egt. ikke h_-1)
+        d_2m = 2*h[0] #vet egt. ikke h_-1, setter h_-1=h_0
     else:
         d_2m = h[i-2] + h[i-1]
     d_p = h[i]
@@ -130,18 +128,22 @@ def num_solution_four_point_stencil(x):
     h[:] = x[1:] - x[:-1]
     
     for i in range(M):
-        a[i],b[i],c[i] = coeff_stencil(i+1,h)
-
-    data = np.array([a, b, -(a+b+c), c])
-    diags = np.array([-2,-1, 0, 1])
-    Ah = spdiags(data, diags, M, M).toarray()
+        a[i],b[i],c[i] = coeff_stencil(i+1,h) 
+    #care for the indices; a[0] = a_1 in the scheme
+    
+    #I disard U_-1, don't know how to get rid of it in the difference scheme, aka I set a[0]=0 (a_1 = 0)
+    a[0] = 0
+    #Note; Here using sparse.diags, not sparse.spdiags!! - only for me to better control what comes in to Ah
+    data = [a[2:], b[1:], -(a+b+c), c[:-1]]   
+    diagonals = np.array([-2,-1, 0, 1])
+    Ah = diags(data, diagonals).toarray()
     
     alpha = anal_solution(x[0])
     beta = anal_solution(x[-1])
     
     f_vec = np.full(M, f(x[1:-1]))
     f_vec[0] = f_vec[0] - b[0]*alpha
-    #f_vec[1] = f_vec[1] - a[1]*alpha #Should this be here?
+    f_vec[1] = f_vec[1] - a[1]*alpha
     f_vec[-1] = f_vec[-1] - c[-1]*beta
 
     # Solve linear system. 
@@ -182,14 +184,38 @@ def AMR_average(x0,steps):  #using average
     return Usol_M, X_M, disc_error
 
 
-steps = 3
-'''
-#Test with a plot
+#testing the 4-point stencil with a plot
+M = 10
+x = np.linspace(0, 1, M+2)
+steps = 6
 U, X, disc_error = AMR_average(x,steps)
-for i in range(steps+1):
+for i in range(0,steps+1,2):
     plt.plot(X[i],U[i],label=str(i))
 
-plt.plot(X[-1],anal_solution(X[-1],epsilon),label="An",linestyle='dotted')
+plt.plot(X[-1],anal_solution(X[-1]),label="An",linestyle='dotted')
 plt.legend()
-plt.show()      ### Think it is somethin wrong with the stencil, cant see what excactly
-'''
+plt.show() #this looks better now :-)
+
+
+#plotting error, here disc_error. Also need cont_error
+M = 20
+x0 = np.linspace(0, 1, M+2)
+steps = 9
+U, X, disc_error = AMR_average(x0,steps)
+M_list = np.zeros(steps+1)
+e_1 = np.zeros(steps+1)
+for i in range(steps+1):
+    u = anal_solution(X[i])
+    e_1[i] = la.norm(U[i]-u)/la.norm(u)
+    M_list[i] = len(X[i]-2) #guess this is right, not that it matter so much
+    
+h_list = 1/(M_list+1)
+plt.plot(M_list,e_1,label="e_l_second")
+plt.plot(M_list,80*h_list**2,label="O(h^2)",linestyle='dashed')
+plt.yscale('log')
+plt.xscale('log')
+plt.legend()
+plt.grid()
+plt.show()
+
+## we also need to implement a first order AMR. How do we do that? - need to find a scheme
