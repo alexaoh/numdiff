@@ -1,4 +1,3 @@
-
 from scipy.sparse import spdiags # Make sparse matrices with scipy.
 import numpy as np
 import numpy.linalg as la
@@ -10,13 +9,13 @@ def f(x):
     return epsilon**(-2)*np.exp(-(1/epsilon)*(x-0.5)**2)*(4*x**2 - 4*x + 1 - 2*epsilon)
 
 
-def anal_solution(x):
-    """Manufactured solution of the Poisson equation with Dirichlet BC"""
+def anal_solution(x, epsilon):
+    """Manufactured solution of the Poisson equation with Dirichlet BC."""
     return np.exp(-(1/epsilon)*(x-0.5)**2)
 
 
-def num_sol_second_order(x, M): #This is a second order method, using central difference
-    """Second order numerical solution of the Possion equation with Dirichlet BC. given by the manufactured solution"""
+def num_sol_second_order(x, M, epsilon): #This is a second order method, using central difference
+    """Second order numerical solution of the Possion equation with Dirichlet B.C. given by the manufactured solution."""
 
     h = 1/(M+1)
 
@@ -45,9 +44,11 @@ def num_sol_second_order(x, M): #This is a second order method, using central di
     
     return Usol
 
-def num_sol_first_order(x,M):
-    """First order numerical solution of the Possion equation with Dirichlet B.C. given by the manufactured solution
-        Using a forward difference scheme"""
+def num_sol_first_order(x,M,epsilon):
+    """First order numerical solution of the Possion equation with Dirichlet B.C.,
+    
+    given by the manufactured solution. Using a forward difference scheme.
+    """
     h = 1/(M+1)
 
     #Construct Dirichlet boundary condition from manuactured solution
@@ -103,6 +104,7 @@ plt.plot(M_list,e_2,label="l2_second")
 plt.yscale('log')
 plt.xscale('log')
 plt.legend()
+plt.grid()
 plt.show()
 
 
@@ -122,7 +124,7 @@ def coeff_stencil(i,h): #i can go from i=1 to i=M
 
 
 def num_solution_four_point_stencil(x):
-    '''Makes the matrix Ah, the discretizaion of U_xx, depentent on the grid x'''
+    """Makes the matrix Ah, the discretizaion of U_xx, depentent on the grid x."""
     M = len(x)-2
     a, b, c = np.zeros(M),np.zeros(M),np.zeros(M)
     h = np.zeros(len(x)-1)
@@ -155,7 +157,7 @@ def num_solution_four_point_stencil(x):
 
 
 def AMR_average(x0,steps):  #using average
-    '''Uses mesh refinement 'steps' times. Finds the error, x-grid and numerical solution for each step.'''
+    """Uses mesh refinement 'steps' times. Finds the error, x-grid and numerical solution for each step."""
     disc_error = np.zeros(steps+1)
     Usol_M = [num_solution_four_point_stencil(x0)] #using regular lists so we can append arrays of different shapes
     X_M = [x0]
@@ -179,7 +181,6 @@ def AMR_average(x0,steps):  #using average
     u = anal_solution(X_M[-1])
     disc_error[-1] = la.norm(Usol_M[-1]-u)/la.norm(u)
     return Usol_M, X_M, disc_error
-
 
 
 steps = 3
