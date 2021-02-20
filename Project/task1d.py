@@ -103,6 +103,7 @@ plt.show()
 # 1) Have to discard U_-1 and set h_-1=h_0
 # 2) The error is increasing at first step
 # 3) Too much refinement for each step, can we reduce this somehow
+# 4) seems like max_norm does not work, can't see why
 
 
 def coeff_stencil(i,h): #i can go from i=1 to i=M
@@ -157,61 +158,79 @@ def num_solution_four_point_stencil(x):
     return Usol
 
 
-def AMR_average(x0,steps):  #using average
+def AMR(x0, steps, method='average'):  #method can be 'average' or 'max_norm'
     """Uses mesh refinement 'steps' times. Finds the error, x-grid and numerical solution for each step."""
     disc_error = np.zeros(steps+1)
+    M_list = np.zeros(steps+1)
     Usol_M = [num_solution_four_point_stencil(x0)] #using regular lists so we can append arrays of different shapes
     X_M = [x0]
     for k in range(steps):
+        M_list[k] = len(X_M[-1])-2
         
         u = anal_solution(X_M[-1])        
-        error = la.norm(Usol_M[-1] - u)
-        disc_error[k] = error/la.norm(u) #relative error
-        average_error = error/len(X_M[-1]) #is this the correct form?
+        disc_error[k] = la.norm(Usol_M[-1] - u)/la.norm(u) #relative disc_error
         
+        if method=='max_norm':
+            error_bound = 0.7*np.amax(np.abs(Usol_M[-1]-u)) # 0.7*max_error
+        else:
+            error_bound = np.average(np.abs(Usol_M[-1]-u)) # using average error, no contribution to error at boundary
+            
         #refine the grid
         x = np.copy(X_M[-1])
         n = 0 #hjelpevariabel
         for i in range(1,len(Usol_M[-1])-1): #know the correct values at the boundary
-            if abs(Usol_M[-1][i]-u[i]) > average_error:
+            if abs(Usol_M[-1][i]-u[i]) > error_bound:
                 x = np.insert(x,i+n,(X_M[-1][i]+X_M[-1][i-1])/2)
                 n += 1
+        
         X_M.append(x)
         Usol_M.append(num_solution_four_point_stencil(x))
-        
+    
+    #need to add the last error and M-number
     u = anal_solution(X_M[-1])
     disc_error[-1] = la.norm(Usol_M[-1]-u)/la.norm(u)
-    return Usol_M, X_M, disc_error
+    M_list[-1] = len(X_M[-1])-2
+    return Usol_M, X_M, disc_error, M_list
 
-
-#testing the 4-point stencil with a plot
+'''
+# testing the 4-point stencil with a plot
 M = 10
 x = np.linspace(0, 1, M+2)
 steps = 6
-U, X, disc_error = AMR_average(x,steps)
+U, X, disc_error = AMR(x,steps)
 for i in range(0,steps+1,2):
     plt.plot(X[i],U[i],label=str(i))
 
 plt.plot(X[-1],anal_solution(X[-1]),label="An",linestyle='dotted')
 plt.legend()
 plt.show() #this looks better now :-)
-
+'''
 
 #plotting error, here disc_error. Also need cont_error
-M = 20
+# seems to be a problem with using 0.7*max_norm as error bound for refinement. Perhaps we can just stick with the average AMR? 
+M = 9
 x0 = np.linspace(0, 1, M+2)
-steps = 9
-U, X, disc_error = AMR_average(x0,steps)
-M_list = np.zeros(steps+1)
-e_1 = np.zeros(steps+1)
-for i in range(steps+1):
-    u = anal_solution(X[i])
-    e_1[i] = la.norm(U[i]-u)/la.norm(u)
-    M_list[i] = len(X[i]-2) #guess this is right, not that it matter so much
-    
-h_list = 1/(M_list+1)
-plt.plot(M_list,e_1,label="e_l_second")
-plt.plot(M_list,80*h_list**2,label="O(h^2)",linestyle='dashed')
+steps = 10
+
+U, X, disc_error, M = AMR(x0,steps) 
+
+'''
+# make a bar-plot of error at x-points, the boundary conditions are not included (because they are zero)
+# the error does not behave as in presentation given in lectures!
+for i in range(steps+1):    
+    h = X[i][2:] - X[i][1:-1]
+    ave = np.average(np.abs(U[i]-anal_solution(X[i]))) #average AMR
+    plt.plot(X[i],np.ones_like(X[i])*ave,label='ave',linestyle='dashed') #average AMR
+    #max_error = np.amax(np.abs(U[i]-anal_solution(X[i]))) #max AMR
+    #plt.plot(X[i],np.ones_like(X[i])*0.7*max_error,label='inf_norm',linestyle='dashed') #max AMR
+    plt.bar(X[i][1:-1],np.abs(U[i][1:-1]-anal_solution(X[i][1:-1])),width=h,align='edge',label=str(i))
+    plt.legend()
+    plt.show()
+'''
+
+h = 1/(M+1)
+plt.plot(M, disc_error, label="e_l_second")
+plt.plot(M, 80*h**2, label="O(h^2)", linestyle='dashed')
 plt.yscale('log')
 plt.xscale('log')
 plt.legend()
