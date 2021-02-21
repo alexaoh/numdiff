@@ -45,10 +45,10 @@ def crank_nicolson(V, x, t, M, N, g0 = 0, g1 = 0):
 
 def trapezoidal_method(V0, Q, tGrid, h): # Could/should probably be further generalized later. 
     """Solves \dot{V} = \frac{1}{h^2}QV on time axis t.
-    
-    V: Grid to solve on.
+
+    V0: Grid to solve on.
     Q: Matrix in right hand side of equation to solve. 
-    t: Time axis.
+    tGrid: Time axis.
     h: Step length in x.
     """
 

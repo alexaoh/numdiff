@@ -1,4 +1,3 @@
-# Try with Crank Nicholson perhaps. 
 from crank_nicolson import *
 from plot_heat_eqn import *
 from scipy.sparse import spdiags # Make sparse matrices with scipy.
@@ -24,25 +23,31 @@ initial = (lambda x: 2*np.pi*x - np.sin(2*np.pi*x))
 
 
 
-def secondOrder(M, plot = True):
-    ''' Use central differences + trapezoidal '''
-
+def calcSol(M, order, plot = True):
+    ''' 
+    order = 1: Use bd and fd on bc + trapezoidal.
+    order = 2: Use central differences with fict. nodes on bc + trapezoidal.
+    '''
     
-    N = 1 # Internal points in t dimension.
+    N = 50 # Internal points in t dimension.
     L = 1 # Length of rod. 
 
     # Construct Q
     data = np.array([np.full(M+1, 1), np.full(M+1, -2), np.full(M+1, 1)])
     diags = np.array([-1, 0, 1])
     Q = spdiags(data, diags, M+1, M+1).toarray()
-    #Q[0, 0] = Q[-1, -1] = -1
-    Q[0, 1] = Q[-1, -2] =  2 #0
-    #Q[0, 2] = Q[-1,-3] = 1
-    print(Q)
+    if order == 1:
+        Q[0, 0] = Q[-1, -1] = -1
+        Q[0, 1] = Q[-1, -2] =  0
+        Q[0, 2] = Q[-1,-3] = 1
+
+    elif order == 2:
+        Q[0, 1] = Q[-1, -2] =  2 
+    
 
     xGrid = np.linspace(0, L, M + 1)
     h = xGrid[1]-xGrid[0]
-    tGrid = np.linspace(0, 0.001, N+1) # t-axis. 
+    tGrid = np.linspace(0, 0.2, N+1) # t-axis. 
     V0 = [initial(x) for x in xGrid]
     
     sol = trapezoidal_method(V0, Q, tGrid, h)
@@ -54,18 +59,18 @@ def secondOrder(M, plot = True):
     return sol
 
 
-def saveRefSol(Mstar, filename):
+def saveRefSol(Mstar, order, filename):
     '''Saves the reference solution to file.'''
-    refSol = secondOrder(Mstar, plot = False)
+    refSol = calcSol(Mstar, order, plot = False)
     with open(filename, 'wb') as fi:
         pickle.dump(refSol, fi)
 
 
 
-def calcError(Mstar, filename):
+def calcError(Mstar, order, filename):
     '''Calculates the relative error with the reference solution'''
     refSol = None
-    refTime = 1 # Time step at which to calculate error.
+    refTime = -1 # Time step at which to calculate error.
     with open(filename, 'rb') as fi: # Fetches the calculated reference solution
         refSol = pickle.load(fi)
 
@@ -79,7 +84,7 @@ def calcError(Mstar, filename):
     piecewise = lambda Ustar, M, Mstar : [Ustar[math.floor(i*(Mstar + 1)/(M + 1))] for i in range(M + 1)]
 
     for M in Mlist:
-        sol = secondOrder(M, plot = False)
+        sol = calcSol(M, order, plot = False)
         u = sol[refTime,:]
         uStar = np.array(piecewise(refSol[refTime,:], M, Mstar))
         err = e_l(u, uStar)
@@ -99,9 +104,10 @@ def calcError(Mstar, filename):
     plt.show()
 
 
-Mstar = 10000
+Mstar = 1000
 filename = 'refSol.pk'
-#saveRefSol(Mstar, filename) # Only needs to be run once, or if you change Mstar
-calcError(Mstar, filename)
+saveRefSol(Mstar, 1, filename) # Only needs to be run once, or if you change Mstar
+calcError(Mstar, 2, filename)
+
 
 
