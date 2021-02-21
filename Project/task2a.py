@@ -23,30 +23,6 @@ def e_l(U, u):
 initial = (lambda x: 2*np.pi*x - np.sin(2*np.pi*x))
 
 
-M = 4 # Internal points in x dimension.
-N = 500 # Internal points in t dimension.
-L = 1 # Length of rod. 
-x = np.linspace(0, L, M+1) # x-axis.
-t = np.linspace(0, 0.5, N+1) # t-axis. 
-h = x[1]-x[0]
-
-V = np.zeros((M+1, M+1)) # Make grid. 
-V[:,0] = initial(x) # Add initial condition. 
-
-data = np.array([np.full(M+1, 1), np.full(M+1, -2), np.full(M+1, 1)])
-diags = np.array([0, 1, 2])
-Q = spdiags(data, diags, M+1, M+1).toarray()
-
-# Solution of the problem with Crank-Nicolson.
-# V = trapezoidal_method(V, Q, t, h)
-
-# Visualize in 3d and with subplots for some times. 
-# tv, xv = np.meshgrid(t,x)
-# three_dim_plot(xv = xv, tv = tv, I = U, label = "Numerical Solution")
-# sub(x = x, I = U, t = t, L = L, t_index = [0, int(N/500), int(N/70), int(N/10)], label = "Numerical solution at some times")
-
-# Need to draw the convergence plot with CN and Theta-method. 
-# How is this done/what is the convergence plot?
 
 def secondOrder(M, plot = True):
     ''' Use central differences + trapezoidal '''
@@ -59,31 +35,18 @@ def secondOrder(M, plot = True):
     data = np.array([np.full(M+1, 1), np.full(M+1, -2), np.full(M+1, 1)])
     diags = np.array([-1, 0, 1])
     Q = spdiags(data, diags, M+1, M+1).toarray()
-    # Q[-1, -2] = Q[0, 1] = 2 
-    Q[0, 0] = Q[-1, -1] = -1
-    Q[0, 1] = Q[-1, -2] = 0
-    Q[0, 2] = Q[-1,-3] = 1
-    #print(Q)
+    #Q[0, 0] = Q[-1, -1] = -1
+    Q[0, 1] = Q[-1, -2] =  2 #0
+    #Q[0, 2] = Q[-1,-3] = 1
+    print(Q)
 
     xGrid = np.linspace(0, L, M + 1)
     h = xGrid[1]-xGrid[0]
-    tGrid = np.linspace(0, 0.1, N+1) # t-axis. 
+    tGrid = np.linspace(0, 0.001, N+1) # t-axis. 
     V0 = [initial(x) for x in xGrid]
-
-    sol = trapezoidal_method(V0, Q, t, h)
-    #print("sol:")
-    #print(sol)
-
-    # Plotting to check, looks promising.
-    # Maybe alex has some fancy plotting methods?
-    #plt.plot(xGrid,sol[0,:])
-    #plt.plot(xGrid,sol[5,:])
-    #plt.plot(xGrid,sol[10,:])
-    #plt.plot(xGrid, sol[20,:])
-    #plt.plot(xGrid, sol[40,:])
-    #plt.plot(xGrid, sol[-1,:])
-
-    #plt.show()
+    
+    sol = trapezoidal_method(V0, Q, tGrid, h)
+  
     if plot:
         tv, xv = np.meshgrid(tGrid,xGrid)
         three_dim_plot(xv = xv, tv = tv, I = sol.T, label = "Numerical Solution")
@@ -102,32 +65,42 @@ def saveRefSol(Mstar, filename):
 def calcError(Mstar, filename):
     '''Calculates the relative error with the reference solution'''
     refSol = None
-    refTime = 3 # Time step at which to calculate error.
-    with open(filename, 'rb') as fi:
+    refTime = 1 # Time step at which to calculate error.
+    with open(filename, 'rb') as fi: # Fetches the calculated reference solution
         refSol = pickle.load(fi)
 
-    Mlist = [i for i in range(10, 1000)]
+    Mlist = [i for i in range(5, 100)]
+    Mlist += [200,300,400,500,700,900,1000]
     errorList = []
-    piecewise = lambda u, refSol, M, Mstar : [refSol[math.floor(i*Mstar/M)] for i in range(len(u))]
+    hList = []
+    hList2 = []
+
+    # Piecewise constant function uStar
+    piecewise = lambda Ustar, M, Mstar : [Ustar[math.floor(i*(Mstar + 1)/(M + 1))] for i in range(M + 1)]
+
     for M in Mlist:
         sol = secondOrder(M, plot = False)
         u = sol[refTime,:]
-        uStar = np.array(piecewise(u, refSol[refTime,:], M, Mstar))
-        #print("Ustar")
-        #print(uStar)
-        #print(sol)
+        uStar = np.array(piecewise(refSol[refTime,:], M, Mstar))
         err = e_l(u, uStar)
+
         errorList.append(err)
+        hList.append(1/(M + 1))
+        hList2.append((1/(M + 1))**2)
+           
     
-    plt.plot(Mlist, errorList)
+    plt.plot(Mlist, hList2, label="$O(h^2)$", linestyle='dashed') 
+    plt.plot(Mlist, hList, label="$O(h)$", linestyle='dashed') 
+    plt.plot(Mlist, errorList, label = "$e^r_l$")
     plt.yscale("log")
     plt.xscale("log")
+    plt.legend()
+    plt.grid()
     plt.show()
 
 
 Mstar = 10000
 filename = 'refSol.pk'
-
 #saveRefSol(Mstar, filename) # Only needs to be run once, or if you change Mstar
 calcError(Mstar, filename)
 

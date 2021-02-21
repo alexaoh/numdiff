@@ -43,24 +43,23 @@ def crank_nicolson(V, x, t, M, N, g0 = 0, g1 = 0):
 
     # Do not think we will use the function above, but will leave it here for now, just in case. 
 
-def trapezoidal_method(V, Q, t, h): # Could/should probably be further generalized later. 
+def trapezoidal_method(V0, Q, tGrid, h): # Could/should probably be further generalized later. 
     """Solves \dot{V} = \frac{1}{h^2}QV on time axis t.
     
     V: Grid to solve on.
     Q: Matrix in right hand side of equation to solve. 
     t: Time axis.
-    N: Steps in time.
     h: Step length in x.
     """
 
-    sol = np.zeros((len(t),len(V)))
-    sol[0,:] = V
-    k = t[1]-t[0]
+    sol = np.zeros((len(tGrid),len(V0)))
+    sol[0,:] = V0
+    k = tGrid[1]-tGrid[0]
     M = Q.shape[0]
     r = k/h**2
     print(Q.shape)
     print(sol.shape)
-    for n in range(len(t)-1):
+    for n in range(len(tGrid)-1):
         lhs = (np.eye(M) - (r/2)*Q)
         rhs = (np.eye(M) + (r/2)*Q) @ sol[n, :]
         l = np.linalg.solve(lhs, rhs)
