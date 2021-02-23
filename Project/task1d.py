@@ -16,37 +16,7 @@ def anal_solution(x):
     return np.exp(-(1/epsilon)*(x-0.5)**2)
 
 
-def num_sol_second_order(x, M): #Second order method using central difference
-    """Second order numerical solution of the Possion equation with Dirichlet B.C. given by the manufactured solution."""
-
-    h = 1/(M+1)
-
-    # Construct Dirichlet boundary condition from manuactured solution.
-    alpha = anal_solution(x[0])
-    beta = anal_solution(x[-1])
-    
-    # Construct Ah. 
-    data = np.array([np.full(M, 1), np.full(M, -2), np.full(M, 1)])
-    diags = np.array([-1, 0, 1])
-    Ah = spdiags(data, diags, M, M).toarray()*1/h**2
-
-    # Construct f.
-    f_vec = np.full(M, f(x[1:-1]))
-    f_vec[0] = f_vec[0] - alpha/h**2
-    f_vec[-1] = f_vec[-1] - beta/h**2
-
-    # Solve linear system. 
-    Usol = la.solve(Ah, f_vec)
-
-    # Add left Dirichlet condition to solution.
-    Usol = np.insert(Usol, 0, alpha)
-
-    # Add right Dirichlet condtion to solution.
-    Usol = np.append(Usol,beta)
-    
-    return Usol
-
-def num_sol_first_order(x,M): #first order using forward difference
+def num_sol_UMR(x,M,order): #order = 1 or 2
     """First order numerical solution of the Possion equation with Dirichlet B.C.,
     given by the manufactured solution. Using a forward difference scheme.
     """
@@ -61,7 +31,10 @@ def num_sol_first_order(x,M): #first order using forward difference
     diags = np.array([-1, 0, 1])
     Ah = spdiags(data, diags, M, M).toarray()*1/h**2
     
-    f_vec = np.full(M,f(x[:-2]))
+    if order == 1:
+        f_vec = np.full(M,f(x[:-2]))
+    else: #order = 2
+        f_vec = np.full(M, f(x[1:-1]))
     f_vec[0] = f_vec[0]- alpha/h**2
     f_vec[-1] = f_vec[-1] - beta/h**2
 
@@ -87,8 +60,8 @@ e_2_cont = np.zeros(len(M_list))
 for i, m in enumerate(M_list):
     x = np.linspace(0,1,m+2)
     u = anal_solution(x)
-    first_order_num = num_sol_first_order(x,m)
-    second_order_num = num_sol_second_order(x,m)
+    first_order_num = num_sol_UMR(x,m,1)
+    second_order_num = num_sol_UMR(x,m,2)
 
     # Discrete norms. 
     e_1_disc[i] = e_l(first_order_num, u)
@@ -116,6 +89,7 @@ def plot_errors_UMR(save = False):
     if save:
         plt.savefig("loglogtask1dUMR.pdf")
     plt.show()
+
 
 ##--------- AMR--------------
 # works better now. 
