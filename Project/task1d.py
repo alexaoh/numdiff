@@ -101,17 +101,21 @@ for i, m in enumerate(M_list):
     e_1_cont[i] = e_L(interpU_first, anal_solution, x[0], x[-1])
     e_2_cont[i] = e_L(interpU_second, anal_solution, x[0], x[-1])
 
-plt.plot(M_list,e_1_disc,label="l2_first", color = "red")
-plt.plot(M_list,8*h_list,label=r"O$(h)$",linestyle='dashed', color = "red")
-plt.plot(M_list,10*h_list**2,label=r"O$(h^2)$",linestyle='dashed', color = "blue")
-plt.plot(M_list,e_2_disc,label="l2_second", color = "blue")
-plt.plot(M_list,e_2_cont,label="L2_second", color = "orange", linestyle = "dotted")
-plt.plot(M_list,e_1_cont,label="L2_first", color = "green", linestyle = "dotted")
-plt.yscale('log')
-plt.xscale('log')
-plt.legend()
-plt.grid()
-plt.show()
+def plot_errors_UMR(save = False):
+    """Encapsulation, to avoid commenting while development."""
+    plt.plot(M_list,e_1_disc,label="l2_first", color = "red")
+    plt.plot(M_list,8*h_list,label=r"O$(h)$",linestyle='dashed', color = "red")
+    plt.plot(M_list,10*h_list**2,label=r"O$(h^2)$",linestyle='dashed', color = "blue")
+    plt.plot(M_list,e_2_disc,label="l2_second", color = "blue")
+    plt.plot(M_list,e_2_cont,label="L2_second", color = "orange", linestyle = "dotted")
+    plt.plot(M_list,e_1_cont,label="L2_first", color = "green", linestyle = "dotted")
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.legend()
+    plt.grid()
+    if save:
+        plt.savefig("loglogtask1dUMR.pdf")
+    plt.show()
 
 ##--------- AMR--------------
 # works better now. 
@@ -130,7 +134,7 @@ def coeff_stencil(i,h): #i can go from i=1 to i=M
         d_2m = h[i-2] + h[i-1]
     d_p = h[i]
     d_m = h[i-1]
-    a = 2 * (d_p - d_m) / (d_2m*(d_2m + d_p)*(d_2m - d_m))
+    a = 2 * (d_p - d_m) / (d_2m*(d_2m + d_p)*(d_2m - d_m)) 
     b = 2 * (d_2m - d_p) / (d_m*(d_2m - d_m)*(d_m + d_p))
     c = 2 * (d_2m + d_m) / (d_p*(d_m + d_p)*(d_2m + d_p))
    
@@ -138,7 +142,7 @@ def coeff_stencil(i,h): #i can go from i=1 to i=M
 
 
 def num_solution_four_point_stencil(x):
-    """Makes the matrix Ah, the discretizaion of U_xx, depentent on the grid x."""
+    """Makes the matrix Ah, the discretizaion of U_xx, dependent on the grid x."""
     M = len(x)-2
     a, b, c = np.zeros(M),np.zeros(M),np.zeros(M)
     h = np.zeros(len(x)-1)
@@ -208,19 +212,20 @@ def AMR(x0, steps, method='average'):  #method can be 'average' or 'max_norm'
     M_list[-1] = len(X_M[-1])-2
     return Usol_M, X_M, disc_error, M_list
 
-'''
-# testing the 4-point stencil with a plot
-M = 10
-x = np.linspace(0, 1, M+2)
-steps = 6
-U, X, disc_error = AMR(x,steps)
-for i in range(0,steps+1,2):
-    plt.plot(X[i],U[i],label=str(i))
 
-plt.plot(X[-1],anal_solution(X[-1]),label="An",linestyle='dotted')
-plt.legend()
-plt.show() #this looks better now :-)
-'''
+# testing the 4-point stencil with a plot
+def test_plot_4_point_stencil():
+    """Encapsulation for ease of use under development."""
+    M = 10
+    x = np.linspace(0, 1, M+2)
+    steps = 6
+    U, X, _, _ = AMR(x,steps)
+    for i in range(0,steps+1,2):
+        plt.plot(X[i],U[i],label=str(i))
+
+    plt.plot(X[-1],anal_solution(X[-1]),label="An",linestyle='dotted')
+    plt.legend()
+    plt.show() #this looks better now :-)
 
 #plotting error, here disc_error. Also need cont_error
 # seems to be a problem with using 0.7*max_norm as error bound for refinement. Perhaps we can just stick with the average AMR? 
