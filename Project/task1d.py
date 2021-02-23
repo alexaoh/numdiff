@@ -2,6 +2,8 @@ from scipy.sparse import spdiags,diags # Make sparse matrices with scipy.
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
+from utilities import *
+from scipy.interpolate import interp1d 
 
 epsilon = 0.01
 def f(x):
@@ -19,7 +21,7 @@ def num_sol_second_order(x, M): #Second order method using central difference
 
     h = 1/(M+1)
 
-    #Construct Dirichlet boundary condition from manuactured solution
+    # Construct Dirichlet boundary condition from manuactured solution.
     alpha = anal_solution(x[0])
     beta = anal_solution(x[-1])
     
@@ -73,29 +75,43 @@ def num_sol_first_order(x,M): #first order using forward difference
     Usol = np.append(Usol,beta)
     return Usol
 
-'''
 ### Uniform mesh refinement UMR, here using disc_error
 M_list = np.linspace(20,1000,20,dtype=int)
 h_list = 1/(M_list+1)
 
-e_1 = np.zeros(len(M_list))
-e_2 = np.zeros(len(M_list))
-for i in range(len(M_list)):
-    x = np.linspace(0,1,M_list[i]+2)
-    u = anal_solution(x)
-    e_1[i] = la.norm(num_sol_first_order(x,M_list[i]) - u)/la.norm(u)
-    e_2[i] = la.norm(num_sol_second_order(x,M_list[i]) - u)/la.norm(u)
+e_1_disc = np.zeros(len(M_list))
+e_2_disc = np.zeros(len(M_list))
+e_1_cont = np.zeros(len(M_list))
+e_2_cont = np.zeros(len(M_list))
 
-plt.plot(M_list,e_1,label="l2_first")
-plt.plot(M_list,8*h_list,label='O(h)',linestyle='dashed')
-plt.plot(M_list,10*h_list**2,label="O(h^2)",linestyle='dashed')
-plt.plot(M_list,e_2,label="l2_second")
+for i, m in enumerate(M_list):
+    x = np.linspace(0,1,m+2)
+    u = anal_solution(x)
+    first_order_num = num_sol_first_order(x,m)
+    second_order_num = num_sol_second_order(x,m)
+
+    # Discrete norms. 
+    e_1_disc[i] = e_l(first_order_num, u)
+    e_2_disc[i] = e_l(second_order_num, u)
+    
+    interpU_first = interp1d(x, first_order_num, kind = 'cubic')
+    interpU_second = interp1d(x, second_order_num, kind = 'cubic')
+
+    # Continuous norms. 
+    e_1_cont[i] = e_L(interpU_first, anal_solution, x[0], x[-1])
+    e_2_cont[i] = e_L(interpU_second, anal_solution, x[0], x[-1])
+
+plt.plot(M_list,e_1_disc,label="l2_first", color = "red")
+plt.plot(M_list,8*h_list,label=r"O$(h)$",linestyle='dashed', color = "red")
+plt.plot(M_list,10*h_list**2,label=r"O$(h^2)$",linestyle='dashed', color = "blue")
+plt.plot(M_list,e_2_disc,label="l2_second", color = "blue")
+plt.plot(M_list,e_2_cont,label="L2_second", color = "orange", linestyle = "dotted")
+plt.plot(M_list,e_1_cont,label="L2_first", color = "green", linestyle = "dotted")
 plt.yscale('log')
 plt.xscale('log')
 plt.legend()
 plt.grid()
 plt.show()
-'''
 
 ##--------- AMR--------------
 # works better now. 
@@ -228,6 +244,7 @@ for i in range(steps+1):
     plt.show()
 '''
 
+'''
 h = 1/(M+1)
 plt.plot(M, disc_error, label="e_l_second")
 plt.plot(M, 80*h**2, label="O(h^2)", linestyle='dashed')
@@ -236,5 +253,5 @@ plt.xscale('log')
 plt.legend()
 plt.grid()
 plt.show()
-
+'''
 ## we also need to implement a first order AMR. How do we do that? - need to find a scheme
