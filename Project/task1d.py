@@ -92,12 +92,18 @@ def plot_errors_UMR(save = False):
 
 
 ##--------- AMR--------------
-# works better now. 
-# problems; 
+# problems in second order func;
 # 1) Have to discard U_-1 and set h_-1=h_0
-# 2) The error is increasing at first step
-# 3) Too much refinement for each step, can we reduce this somehow
-# 4) seems like max_norm does not work, can't see why
+# 2) The error is increasing at first step, but also in other steps. Perhaps this is normal.
+
+# problems in first order func;
+# 1) still not sure if it's a first order method
+# 2) The error seems to 'flatten' out and stays at a constant level, maybe there are some wrong with the code. I have not
+# tested it a lot :/
+
+# problems in AMR func;
+# 1) seems like the endpoints won't refine. Look at bar-plot of error. Some x-intervals are not changing at all!
+# 2) Too much refinement for each step, can we reduce this somehow and thereby get more points in the error plot
 
 
 def coeff_stencil(i,h): #i can go from i=1 to i=M
@@ -115,7 +121,7 @@ def coeff_stencil(i,h): #i can go from i=1 to i=M
     return a, b, c
 
 
-def num_solution_four_point_stencil(x):
+def num_sol_AMR_second(x):
     """Makes the matrix Ah, the discretizaion of U_xx, dependent on the grid x."""
     M = len(x)-2
     a, b, c = np.zeros(M),np.zeros(M),np.zeros(M)
@@ -143,20 +149,40 @@ def num_solution_four_point_stencil(x):
 
     # Solve linear system. 
     Usol = la.solve(Ah, f_vec)
-
-    # Add left Dirichlet condition to solution.
     Usol = np.insert(Usol, 0, alpha)
+    Usol = np.append(Usol,beta)
+    
+    return Usol
 
-    # Add right Dirichlet condtion to solution.
+
+#I'm not sure if this one is first order, but it is certainly less accurate than the second order func.
+def num_sol_AMR_first(x):
+    M = len(x)-2
+    h = np.zeros(len(x)-1)
+    h[:] = x[1:] - x[:-1]
+
+    data = [1/(h[1:-1]*h[2:]), -(h[1:]+h[:-1])/(h[1:]**2*h[:-1]),1/(h[1:-1]**2)]   
+    diagonals = np.array([-1, 0, 1])
+    Ah = diags(data, diagonals).toarray()
+    
+    alpha = anal_solution(x[0])
+    beta = anal_solution(x[-1])
+    
+    f_vec = np.full(M, f(x[1:-1]))
+    f_vec[0] = f_vec[0] - alpha/(h[1]*h[0])
+    f_vec[-1] = f_vec[-1] - beta/(h[-1]**2)
+
+    Usol = la.solve(Ah,f_vec)
+    Usol = np.insert(Usol, 0, alpha)
     Usol = np.append(Usol,beta)
     return Usol
 
 
-def AMR(x0, steps, method='average'):  #method can be 'average' or 'max_norm'
+def AMR(x0, steps,num_solver): #num_solver = function for first or second order method solver
     """Uses mesh refinement 'steps' times. Finds the error, x-grid and numerical solution for each step."""
     disc_error = np.zeros(steps+1)
     M_list = np.zeros(steps+1)
-    Usol_M = [num_solution_four_point_stencil(x0)] #using regular lists so we can append arrays of different shapes
+    Usol_M = [num_solver(x0)] #using regular lists so we can append arrays of different shapes
     X_M = [x0]
     for k in range(steps):
         M_list[k] = len(X_M[-1])-2
@@ -164,21 +190,18 @@ def AMR(x0, steps, method='average'):  #method can be 'average' or 'max_norm'
         u = anal_solution(X_M[-1])        
         disc_error[k] = la.norm(Usol_M[-1] - u)/la.norm(u) #relative disc_error
         
-        if method=='max_norm':
-            error_bound = 0.7*np.amax(np.abs(Usol_M[-1]-u)) # 0.7*max_error
-        else:
-            error_bound = np.average(np.abs(Usol_M[-1]-u)) # using average error, no contribution to error at boundary
+        error_ave = np.average(np.abs(Usol_M[-1]-u)) # using average error, no contribution to error at boundary
             
         #refine the grid
         x = np.copy(X_M[-1])
         n = 0 #hjelpevariabel
         for i in range(1,len(Usol_M[-1])-1): #know the correct values at the boundary
-            if abs(Usol_M[-1][i]-u[i]) > error_bound:
+            if abs(Usol_M[-1][i]-u[i]) > error_ave:
                 x = np.insert(x,i+n,(X_M[-1][i]+X_M[-1][i-1])/2)
                 n += 1
         
         X_M.append(x)
-        Usol_M.append(num_solution_four_point_stencil(x))
+        Usol_M.append(num_solver(x))
     
     #need to add the last error and M-number
     u = anal_solution(X_M[-1])
@@ -187,31 +210,32 @@ def AMR(x0, steps, method='average'):  #method can be 'average' or 'max_norm'
     return Usol_M, X_M, disc_error, M_list
 
 
-# testing the 4-point stencil with a plot
-def test_plot_4_point_stencil():
+# testing the first or second order AMR solver
+def test_plot_AMR_solver(num_solver):
     """Encapsulation for ease of use under development."""
-    M = 10
+    M = 9
     x = np.linspace(0, 1, M+2)
-    steps = 6
-    U, X, _, _ = AMR(x,steps)
+    steps = 10
+    U, X, _, _ = AMR(x,steps,num_solver)
     for i in range(0,steps+1,2):
         plt.plot(X[i],U[i],label=str(i))
 
     plt.plot(X[-1],anal_solution(X[-1]),label="An",linestyle='dotted')
     plt.legend()
-    plt.show() #this looks better now :-)
+    plt.show()
 
 #plotting error, here disc_error. Also need cont_error
-# seems to be a problem with using 0.7*max_norm as error bound for refinement. Perhaps we can just stick with the average AMR? 
 M = 9
 x0 = np.linspace(0, 1, M+2)
-steps = 10
+steps = 14
 
-U, X, disc_error, M = AMR(x0,steps) 
+U_1, X_1, disc_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
+U_2, X_2, disc_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second) 
 
 '''
 # make a bar-plot of error at x-points, the boundary conditions are not included (because they are zero)
-# the error does not behave as in presentation given in lectures!
+# the error does not behave as in presentation given in lectures
+# some x-intervals won't refine. Probably something wrong in the AMR-func
 for i in range(steps+1):    
     h = X[i][2:] - X[i][1:-1]
     ave = np.average(np.abs(U[i]-anal_solution(X[i]))) #average AMR
@@ -223,14 +247,15 @@ for i in range(steps+1):
     plt.show()
 '''
 
-'''
-h = 1/(M+1)
-plt.plot(M, disc_error, label="e_l_second")
-plt.plot(M, 80*h**2, label="O(h^2)", linestyle='dashed')
+
+#plot AMR errors
+h = 1/(M_2+1)
+plt.plot(M_1, disc_error_1, label="e_l_first")
+plt.plot(M_2, disc_error_2, label="e_l_second")
+plt.plot(M_2, 80*h, label="O(h)", linestyle='dashed')
+plt.plot(M_2, 80*h**2, label="O(h^2)", linestyle='dashed')
 plt.yscale('log')
 plt.xscale('log')
 plt.legend()
 plt.grid()
 plt.show()
-'''
-## we also need to implement a first order AMR. How do we do that? - need to find a scheme
