@@ -29,7 +29,7 @@ def calcSol(M, order, plot = True):
     order = 2: Use central differences with fict. nodes on bc + trapezoidal.
     '''
     
-    N = 50 # Internal points in t dimension.
+    N = 1000 # Internal points in t dimension.
     L = 1 # Length of rod. 
 
     # Construct Q
@@ -106,8 +106,10 @@ def calcError(Mstar, order, filename):
 
 Mstar = 1000
 filename = 'refSol.pk'
-saveRefSol(Mstar, 1, filename) # Only needs to be run once, or if you change Mstar
+
+saveRefSol(Mstar, 2, filename) # Only needs to be run once, or if you change Mstar
 calcError(Mstar, 2, filename)
+
 
 
 
