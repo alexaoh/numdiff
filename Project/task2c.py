@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.integrate import RK45
 
 def initial(x):
     return np.exp(-400*(x - 1/2)**2)
@@ -7,10 +8,10 @@ def initial(x):
 
 def RK4_step(v, k, f, t_i, M, h):
     '''Used as method in numerical_solution''' 
-    s1 = f(v, t_i, M, h)
-    s2 = f(v + (k / 2) * s1, t_i + k/2, M, h)  
-    s3 = f(v + (k / 2) * s2, t_i + k/2, M, h) 
-    s4 = f(v + k * s3, t_i + k, M, h) 
+    s1 = f(t_i, v)
+    s2 = f(t_i + k/2, v + (k / 2) * s1)  
+    s3 = f(t_i + k/2, v + (k / 2) * s2) 
+    s4 = f(t_i + k, v + k * s3) 
     return v + (k / 6) * (s1 + (2 * s2) + (2 * s3) + s4)
 
 def numSol(F, v0, tGrid, h, M, method): 
@@ -28,7 +29,7 @@ def numSol(F, v0, tGrid, h, M, method):
 
     return vList
 
-def F(v, t_i, M, h):
+def F(t_i, v):
     result = np.zeros(M)
     result[0] = - v[1]*v[2]
     result[-1] = v[-1]*v[-2]
@@ -55,6 +56,7 @@ h = xGrid[1] - xGrid[0]
 tGrid = np.linspace(0,0.065, N)
 
 v0 = np.array([initial(x) for x in xGrid[1:-1]])
+'''
 sol = numSol(F, v0, tGrid, h, M, RK4_step)
 
 # Adding endpoints
@@ -63,6 +65,20 @@ sol = np.hstack((zeros, sol))
 sol = np.hstack((sol, zeros))
 
 
-
 print(sol)
 plotTail(5, 50, sol, tGrid, xGrid)
+'''
+# Solve with scipy:
+
+t_bound = tGrid[-1]
+
+scipySol = RK45(F, tGrid[0], v0, t_bound)
+print(scipySol.t)
+print(scipySol.status)
+y = scipySol.y
+zeros = np.zeros(1)
+y = np.hstack((zeros, y))
+y = np.hstack((y, zeros))
+
+plt.plot(xGrid, y)
+plt.show()
