@@ -6,7 +6,6 @@ First order method; uses Eulers method (forward)
 Second order; Crank Nicolson
 '''
 
-from crank_nicolson import *
 from plot_heat_eqn import *
 from scipy.sparse import spdiags # Make sparse matrices with scipy.
 import numpy as np
@@ -32,67 +31,117 @@ initial = (lambda x: 3*np.sin(2*np.pi*x))
 def anal_solution(x,t):
     return 3*np.exp(-4*(np.pi**2)*t)*np.sin(2*np.pi*x)
 
-def Eulers_method(x,t,M,N):
-    r = (t[1]-t[0])/(x[1]-x[0])**2  #k/h^2 = (M+2)^2/(N+1), must have r <= 0.5 for convergence
-    print(r)
+def theta_method(x, t, M, N, theta):
+    """Theta-method.
+    M: Number of internal points in x-dimension in the grid. 
+    N: Number of internal points in t-direction in the grid.  
+    theta: Parameter to change how the method works. 
+    
+    Returns a new list X with the solution of the problem in the gridpoints. 
+    """
     U = np.zeros((N+1,M+2))
     U[0,:] = initial(x)
+    U[:,0] = 0
+    U[:,-1] = 0
     
+    # Calculate step lengths. 
+    h = x[1] - x[0]
+    k = t[1] - t[0]
+    r = k/h**2
+    
+    # Set up the array Ah with scipy.sparse.spdiags, 
     data = np.array([np.full(M, 1), np.full(M, -2), np.full(M, 1)])
     diags = np.array([-1, 0, 1])
-    A = spdiags(data, diags, M, M).toarray()
-   
+    Ah = spdiags(data, diags, M, M).toarray()
+    
     for n in range(N):
-        U[n+1,1:-1] = U[n,1:-1] + r* (A @ U[n,1:-1])
+        RHS = (np.identity(M) +(1-theta)*r*Ah) @ U[n,1:-1]
+        U[n+1,1:-1] = la.solve((np.identity(M)-theta*r*Ah),RHS)
+        
     return U
 
-M = 15
-x = np.linspace(0,1,M+2)
-N = 100
-T = 0.5  #arbitrary value
-t = np.linspace(0,T,N+1)
-U = Eulers_method(x,t,M,N)
+#x = np.linspace(0,1,M+2)
+'''
+U_BE = theta_method(x,t,M,N,1)
+U_CN = theta_method(x,t,M,N,1/2)
 
-
-plt.plot(x,U[4,:])
+plt.plot(x,U_CN[-1,:],label='CN')
+plt.plot(x,U_BE[-1,:],label='BE')
+plt.plot(x,anal_solution(x,t[-1]),label='Anal')  
+plt.legend()
 plt.show()
+'''
+def cont_L2_norm(v, t):
+    """Continuous L2 norm of v(x) between left and right. """
+    integrand = lambda x: v(x,t)**2
+    return np.sqrt(quad(integrand, 0, 1)[0])
 
-"""
-def calcSol(M, order, plot = True):
-    ''' 
-    order = 1: Use bd and fd on bc + trapezoidal.
-    order = 2: Use central differences with fict. nodes on bc + trapezoidal.
-    '''
+def e_L(U, u, t):
+    """Relative error e_L.
     
-    N = 50 # Internal points in t dimension.
-    L = 1 # Length of rod. 
+    U: Approximate numerical solution.
+    u: Analytical solution. 
+    """
+    f = lambda x,t : u(x,t) - U(x)
+    numer = cont_L2_norm(f,t)
+    denom = cont_L2_norm(u,t)
 
-    # Construct Q
-    data = np.array([np.full(M+1, 1), np.full(M+1, -2), np.full(M+1, 1)])
-    diags = np.array([-1, 0, 1])
-    Q = spdiags(data, diags, M+1, M+1).toarray()
-    if order == 1:
-        Q[0, 0] = Q[-1, -1] = -1
-        Q[0, 1] = Q[-1, -2] =  0
-        Q[0, 2] = Q[-1,-3] = 1
+    return numer/denom
 
-    elif order == 2:
-        Q[0, 1] = Q[-1, -2] =  2 
+
+#choose time t[-1]=T=0.2, as the time to look at errors.
+T = 0.2
+time_index = -1
+
+num = 7
+M = np.linspace(10,300,num,dtype=int) 
+disc_err_first = np.zeros(num)
+disc_err_second = np.zeros(num)
+cont_err_first = np.zeros(num)
+cont_err_second = np.zeros(num)
+
+r0 = 1 # this is the relation we want to keep, we can maybe increase to >1 if N gets too large
+# uses k=r0*h^2 and N= T/k - 1 to define a new t-grid dependent on the x-grid
+
+# ------ Problems ------- 
+# 1) it takes a looong time to run with this relation for large M>400. N gets way too large, 
+# suggestion; have a linear increase in r0 for each iteration e.g r0 e [1,3]
+# 2) Backward Euler seems to go as O(h^2), is this because we use central difference along x-axis. 
+# Maybe we need to keep M constant and just refine the t-axis and plot error as a function of N? - tried this, did not work!
+
+from scipy.interpolate import interp1d 
+from scipy.integrate import quad
+
+for i in range(len(M)):
+    x = np.linspace(0,1,M[i]+2)
+    h = x[1] - x[0]
     
+    #make a new t-grid based on r0 and M (or h if you like)
+    N = int(T/(r0*h**2)) - 1  
+    t = np.linspace(0,T,N+1)  
+    print(i, (t[1]-t[0])/h**2, M[i], N)
     
-    xGrid = np.linspace(0, L, M + 1)
-    h = xGrid[1]-xGrid[0]
-    tGrid = np.linspace(0, 0.2, N+1) # t-axis. 
-    V0 = [initial(x) for x in xGrid]
+    U_BE = theta_method(x,t,M[i],N,1)
+    U_CN = theta_method(x,t,M[i],N,1/2)
+    u = anal_solution(x,t[time_index])
     
-    sol = trapezoidal_method(V0, Q, tGrid, h)
-  
-    if plot:
-        tv, xv = np.meshgrid(tGrid,xGrid)
-        three_dim_plot(xv = xv, tv = tv, I = sol.T, label = "Numerical Solution")
+    disc_err_first[i] = la.norm(U_BE[time_index,:]-u)/la.norm(u)
+    disc_err_second[i] = la.norm(U_CN[time_index,:]-u)/la.norm(u)
     
-    return sol
-"""
+    #continous error
+    #cont_err_first[i] = e_L(interp1d(x, U_BE[time_index,:], kind = 'cubic'), anal_solution, t[time_index])
+    #cont_err_second[i] = e_L(interp1d(x, U_CN[time_index,:], kind = 'cubic'), anal_solution, t[time_index])
+    
 
-
-
+h = 1/(M+2)
+plt.xscale('log')
+plt.yscale('log')
+plt.plot(M, disc_err_first, label='l2_first', color='red')
+plt.plot(M, disc_err_second, label='l2_second',color='blue')
+#plt.plot(M,cont_err_first, label='L2_first')
+#plt.plot(M,cont_err_second, label='L2_second')
+plt.plot(M, 20*h, label='O(h)', linestyle='dotted', color='red')
+plt.plot(M, 50*h**2, label='O(h^2)',linestyle='dotted', color='blue')
+plt.legend()
+plt.grid()
+plt.show()
