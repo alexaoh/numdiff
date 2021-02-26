@@ -152,16 +152,18 @@ def num_sol_AMR_second(x):
     Usol = np.insert(Usol, 0, alpha)
     Usol = np.append(Usol,beta)
     
-    return Usol
+    return Usol  
 
 
-#I'm not sure if this one is first order, but it is certainly less accurate than the second order func.
-def num_sol_AMR_first(x):
+def num_sol_AMR_first(x):  #uses the 3-point stencil with non-uniform grid
     M = len(x)-2
     h = np.zeros(len(x)-1)
     h[:] = x[1:] - x[:-1]
-
-    data = [1/(h[1:-1]*h[2:]), -(h[1:]+h[:-1])/(h[1:]**2*h[:-1]),1/(h[1:-1]**2)]   
+ 
+    b = 2/(h[:-1]*(h[:-1]+h[1:]))    #b[0] = b_1, b[-1] = b_M, b is M long
+    c = 2/(h[1:]*(h[1:] + h[:-1]))
+    
+    data = [b[1:], -(b+c), c[:-1]]   
     diagonals = np.array([-1, 0, 1])
     Ah = diags(data, diagonals).toarray()
     
@@ -169,12 +171,13 @@ def num_sol_AMR_first(x):
     beta = anal_solution(x[-1])
     
     f_vec = np.full(M, f(x[1:-1]))
-    f_vec[0] = f_vec[0] - alpha/(h[1]*h[0])
-    f_vec[-1] = f_vec[-1] - beta/(h[-1]**2)
+    f_vec[0] = f_vec[0] - alpha*b[0]
+    f_vec[-1] = f_vec[-1] - beta*c[-1]
 
     Usol = la.solve(Ah,f_vec)
     Usol = np.insert(Usol, 0, alpha)
     Usol = np.append(Usol,beta)
+    
     return Usol
 
 
@@ -227,27 +230,31 @@ def test_plot_AMR_solver(num_solver):
 #plotting error, here disc_error. Also need cont_error
 M = 9
 x0 = np.linspace(0, 1, M+2)
-steps = 14
+steps = 16
 
 U_1, X_1, disc_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
 U_2, X_2, disc_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second) 
 
-'''
+
 # make a bar-plot of error at x-points, the boundary conditions are not included (because they are zero)
 # the error does not behave as in presentation given in lectures
 # some x-intervals won't refine. Probably something wrong in the AMR-func
-for i in range(steps+1):    
-    h = X[i][2:] - X[i][1:-1]
-    ave = np.average(np.abs(U[i]-anal_solution(X[i]))) #average AMR
-    plt.plot(X[i],np.ones_like(X[i])*ave,label='ave',linestyle='dashed') #average AMR
-    #max_error = np.amax(np.abs(U[i]-anal_solution(X[i]))) #max AMR
-    #plt.plot(X[i],np.ones_like(X[i])*0.7*max_error,label='inf_norm',linestyle='dashed') #max AMR
-    plt.bar(X[i][1:-1],np.abs(U[i][1:-1]-anal_solution(X[i][1:-1])),width=h,align='edge',label=str(i))
-    plt.legend()
-    plt.show()
+def plot_bar_error(X,U,start,stop):
+    if stop > steps + 1:
+        return 0
+    for i in range(start,stop):    
+        h = X[i][2:] - X[i][1:-1]
+        ave = np.average(np.abs(U[i]-anal_solution(X[i]))) #average AMR
+        plt.plot(X[i],np.ones_like(X[i])*ave,label='ave',linestyle='dashed') #average AMR
+        #max_error = np.amax(np.abs(U[i]-anal_solution(X[i]))) #max AMR
+        #plt.plot(X[i],np.ones_like(X[i])*0.7*max_error,label='inf_norm',linestyle='dashed') #max AMR
+        plt.bar(X[i][1:-1],np.abs(U[i][1:-1]-anal_solution(X[i][1:-1])),width=h,align='edge',label=str(i))
+        plt.legend()
+        plt.show()
+
+#plot_bar_error(X_1,U_1,0,steps)
+
 '''
-
-
 #plot AMR errors
 h = 1/(M_2+1)
 plt.plot(M_1, disc_error_1, label="e_l_first")
@@ -259,3 +266,4 @@ plt.xscale('log')
 plt.legend()
 plt.grid()
 plt.show()
+'''
