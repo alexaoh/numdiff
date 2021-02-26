@@ -35,9 +35,9 @@ def F(t_i, v):
     result[-1] = v[-1]*v[-2]
 
     for i in range(1, M - 1):
-        result[i] = 1/(2*h) * (-v[i] * (v[i + 1] - v[i - 1]))
+        result[i] = (-v[i] * (v[i + 1] - v[i - 1]))
     
-    return result
+    return 1/(2*h) * result
 
 
 def plotTail(n, interval, sol, tGrid, xGrid):
@@ -46,7 +46,7 @@ def plotTail(n, interval, sol, tGrid, xGrid):
         plt.plot(xGrid, sol[-i, :], label = f"$t = {tGrid[-i]}$")
     
     plt.legend()
-    plt.show()
+    #plt.show()
 
 
 M = 1000
@@ -56,7 +56,8 @@ h = xGrid[1] - xGrid[0]
 tGrid = np.linspace(0,0.065, N)
 
 v0 = np.array([initial(x) for x in xGrid[1:-1]])
-'''
+
+
 sol = numSol(F, v0, tGrid, h, M, RK4_step)
 
 # Adding endpoints
@@ -66,19 +67,31 @@ sol = np.hstack((sol, zeros))
 
 
 print(sol)
-plotTail(5, 50, sol, tGrid, xGrid)
-'''
-# Solve with scipy:
+plotTail(2, 50, sol, tGrid, xGrid)
 
+
+
+# Solve with scipy:
+# Looks about right.
+
+'''
 t_bound = tGrid[-1]
 
 scipySol = RK45(F, tGrid[0], v0, t_bound)
-print(scipySol.t)
-print(scipySol.status)
+
+while scipySol.status != "finished":
+    scipySol.step()
+
 y = scipySol.y
 zeros = np.zeros(1)
 y = np.hstack((zeros, y))
 y = np.hstack((y, zeros))
+plt.plot(xGrid, y, label = f"R45 t = {t_bound}", linestyle = "dotted")
+print(scipySol.t)
+print(scipySol.status)
 
-plt.plot(xGrid, y)
+plt.legend()
+'''
+
 plt.show()
+
