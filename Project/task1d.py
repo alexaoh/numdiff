@@ -22,7 +22,7 @@ def num_sol_UMR(x,M,order): #order = 1 or 2
     """
     h = 1/(M+1)
 
-    #Construct Dirichlet boundary condition from manuactured solution
+    # Construct Dirichlet boundary condition from manuactured solution.
     alpha = anal_solution(x[0])
     beta = anal_solution(x[-1])
     
@@ -122,7 +122,7 @@ def coeff_stencil(i,h): #i can go from i=1 to i=M
 
 
 def num_sol_AMR_second(x):
-    """Makes the matrix Ah, the discretizaion of U_xx, dependent on the grid x."""
+    """Makes the matrix Ah, the discretization of U_xx, dependent on the grid x."""
     M = len(x)-2
     a, b, c = np.zeros(M),np.zeros(M),np.zeros(M)
     h = np.zeros(len(x)-1)
@@ -135,12 +135,12 @@ def num_sol_AMR_second(x):
     #I disard U_-1, don't know how to get rid of it in the difference scheme, aka I set a[0]=0 (a_1 = 0)
     a[0] = 0
     #Note; Here using sparse.diags, not sparse.spdiags!! - only for me to better control what comes in to Ah
-    data = [a[2:], b[1:], -(a+b+c), c[:-1]]   
+    data = [a[2:], b[1:], -(a+b+c), c[:-1]]
     diagonals = np.array([-2,-1, 0, 1])
     Ah = diags(data, diagonals).toarray()
     
-    alpha = anal_solution(x[0])
-    beta = anal_solution(x[-1])
+    alpha = anal_solution(0)
+    beta = anal_solution(1)
     
     f_vec = np.full(M, f(x[1:-1]))
     f_vec[0] = f_vec[0] - b[0]*alpha
@@ -199,10 +199,28 @@ def AMR(x0, steps,num_solver): #num_solver = function for first or second order 
         x = np.copy(X_M[-1])
         n = 0 #hjelpevariabel
         for i in range(1,len(Usol_M[-1])-1): #know the correct values at the boundary
-            if abs(Usol_M[-1][i]-u[i]) > error_ave:
+            if abs(Usol_M[-1][i]-u[i]) > error_ave:     
                 x = np.insert(x,i+n,(X_M[-1][i]+X_M[-1][i-1])/2)
                 n += 1
+
+        #Dette var også et forsøk på å diskretisere i siste endepunkt, men sannsynligvis ikke hensiktsmessig likevel. 
+        # if abs(Usol_M[-1][-2]-u[-2]) > error_ave:
+        #     x = np.append(x, (X_M[-1][-3]+X_M[-1][-2])/2)
+
+
+        ##### Alex tried something else below, but the order flattens out and the error does not decrease (only flattens for second order however!!). 
+        # x = list(np.copy(X_M[-1]))
         
+        # for i in range(len(Usol_M[-1])):
+        #     if abs(Usol_M[-1][i]-u[i]) > error_ave:
+        #         small_list = [x[i], (x[i]+x[i+1])/2] # Increase points forwards instead of backwards. 
+        #         x[i] = small_list
+        #     else:
+        #         x[i] = [x[i]]
+                
+        
+        # x = np.array(sum(x, []))
+
         X_M.append(x)
         Usol_M.append(num_solver(x))
     
@@ -227,6 +245,8 @@ def test_plot_AMR_solver(num_solver):
     plt.legend()
     plt.show()
 
+#test_plot_AMR_solver(num_sol_AMR_first)
+
 #plotting error, here disc_error. Also need cont_error
 M = 9
 x0 = np.linspace(0, 1, M+2)
@@ -236,34 +256,39 @@ U_1, X_1, disc_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
 U_2, X_2, disc_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second) 
 
 
-# make a bar-plot of error at x-points, the boundary conditions are not included (because they are zero)
-# the error does not behave as in presentation given in lectures
-# some x-intervals won't refine. Probably something wrong in the AMR-func
+# Does not behave quite like in the presentations. 
 def plot_bar_error(X,U,start,stop):
     if stop > steps + 1:
         return 0
+    
+    rows = 4
+    cols = 4
+    fig, axs = plt.subplots(rows, cols, sharex=True, figsize=(15,15))
     for i in range(start,stop):    
         h = X[i][2:] - X[i][1:-1]
         ave = np.average(np.abs(U[i]-anal_solution(X[i]))) #average AMR
-        plt.plot(X[i],np.ones_like(X[i])*ave,label='ave',linestyle='dashed') #average AMR
         #max_error = np.amax(np.abs(U[i]-anal_solution(X[i]))) #max AMR
         #plt.plot(X[i],np.ones_like(X[i])*0.7*max_error,label='inf_norm',linestyle='dashed') #max AMR
-        plt.bar(X[i][1:-1],np.abs(U[i][1:-1]-anal_solution(X[i][1:-1])),width=h,align='edge',label=str(i))
-        plt.legend()
-        plt.show()
+        axs.flatten()[i].plot(X[i],np.ones_like(X[i])*ave,label='ave',linestyle='dashed') #average AMR
+        axs.flatten()[i].bar(X[i][1:-1],np.abs(U[i][1:-1]-anal_solution(X[i][1:-1])),width=h,align='edge',label=str(i))
+    
+    #plt.legend()
+    fig.tight_layout()
+    plt.show()
 
-#plot_bar_error(X_1,U_1,0,steps)
+plot_bar_error(X_2,U_2,0,steps)
 
-'''
-#plot AMR errors
-h = 1/(M_2+1)
-plt.plot(M_1, disc_error_1, label="e_l_first")
-plt.plot(M_2, disc_error_2, label="e_l_second")
-plt.plot(M_2, 80*h, label="O(h)", linestyle='dashed')
-plt.plot(M_2, 80*h**2, label="O(h^2)", linestyle='dashed')
-plt.yscale('log')
-plt.xscale('log')
-plt.legend()
-plt.grid()
-plt.show()
-'''
+
+def plot_AMR_errors():
+    h = 1/(M_2+1)
+    plt.plot(M_1, disc_error_1, label="e_l_first")
+    plt.plot(M_2, disc_error_2, label="e_l_second")
+    plt.plot(M_2, 80*h, label="O(h)", linestyle='dashed')
+    plt.plot(M_2, 80*h**2, label="O(h^2)", linestyle='dashed')
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+plot_AMR_errors()
