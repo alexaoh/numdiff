@@ -97,9 +97,7 @@ def plot_errors_UMR(save = False):
 # 2) The error is increasing at first step, but also in other steps. Perhaps this is normal.
 
 # problems in first order func;
-# 1) still not sure if it's a first order method
-# 2) The error seems to 'flatten' out and stays at a constant level, maybe there are some wrong with the code. I have not
-# tested it a lot :/
+# 1) looks more like second order to me...
 
 # problems in AMR func;
 # 1) seems like the endpoints won't refine. Look at bar-plot of error. Some x-intervals are not changing at all!
@@ -181,7 +179,7 @@ def num_sol_AMR_first(x):  #uses the 3-point stencil with non-uniform grid
     return Usol
 
 
-def AMR(x0, steps,num_solver): #num_solver = function for first or second order method solver
+def AMR(x0, steps, num_solver): #num_solver = function for first or second order method solver
     """Uses mesh refinement 'steps' times. Finds the error, x-grid and numerical solution for each step."""
     disc_error = np.zeros(steps+1)
     M_list = np.zeros(steps+1)
@@ -195,14 +193,32 @@ def AMR(x0, steps,num_solver): #num_solver = function for first or second order 
         
         error_ave = np.average(np.abs(Usol_M[-1]-u)) # using average error, no contribution to error at boundary
             
-        #refine the grid
+        #refine the grid, changed to adding x-points after the node
         x = np.copy(X_M[-1])
-        n = 0 #hjelpevariabel
+        n = 0
         for i in range(1,len(Usol_M[-1])-1): #know the correct values at the boundary
             if abs(Usol_M[-1][i]-u[i]) > error_ave:     
-                x = np.insert(x,i+n,(X_M[-1][i]+X_M[-1][i-1])/2)
+                x = np.insert(x,i+n,(X_M[-1][i]+X_M[-1][i-1])/2)  #<-- now it is backward refinement, error flattens out for 2nd order
                 n += 1
-
+                
+        
+        '''
+        #----Jostein sin implementasjon-----
+        #function for forward refinement, the for-loop above gave the same result with change in indices (except for the left interval)
+        n = 0
+        i = 2
+        while (i < len(x)-1):
+            if abs(Usol_M[-1][i-n]-u[i-n]) > error_ave:
+                x = np.insert(x, i+1, (x[i]+x[i+1])/2)
+                i += 2
+                n += 1
+            else:
+                i += 1
+        if abs(Usol_M[-1][1]-u[1]) > error_ave:
+            x = np.insert(x, 2, (x[1]+x[2])/2)
+            x = np.insert(x, 1, (x[0]+x[1])/2)
+        '''
+        
         #Dette var også et forsøk på å diskretisere i siste endepunkt, men sannsynligvis ikke hensiktsmessig likevel. 
         # if abs(Usol_M[-1][-2]-u[-2]) > error_ave:
         #     x = np.append(x, (X_M[-1][-3]+X_M[-1][-2])/2)
@@ -236,21 +252,22 @@ def test_plot_AMR_solver(num_solver):
     """Encapsulation for ease of use under development."""
     M = 9
     x = np.linspace(0, 1, M+2)
-    steps = 10
+    steps = 4
     U, X, _, _ = AMR(x,steps,num_solver)
-    for i in range(0,steps+1,2):
+    for i in range(0,steps+1):
+        #print(X[i])
         plt.plot(X[i],U[i],label=str(i))
 
     plt.plot(X[-1],anal_solution(X[-1]),label="An",linestyle='dotted')
     plt.legend()
     plt.show()
 
-#test_plot_AMR_solver(num_sol_AMR_first)
+#test_plot_AMR_solver(num_sol_AMR_second)
 
 #plotting error, here disc_error. Also need cont_error
 M = 9
 x0 = np.linspace(0, 1, M+2)
-steps = 16
+steps = 16  # =16
 
 U_1, X_1, disc_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
 U_2, X_2, disc_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second) 
@@ -276,7 +293,7 @@ def plot_bar_error(X,U,start,stop):
     fig.tight_layout()
     plt.show()
 
-plot_bar_error(X_2,U_2,0,steps)
+#plot_bar_error(X_1,U_1,0,steps)
 
 
 def plot_AMR_errors():
