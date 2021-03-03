@@ -57,8 +57,7 @@ def trapezoidal_method(V0, Q, tGrid, h): # Could/should probably be further gene
     k = tGrid[1]-tGrid[0]
     M = Q.shape[0]
     r = k/h**2
-    print(Q.shape)
-    print(sol.shape)
+    #print('r;', r)
     for n in range(len(tGrid)-1):
         lhs = (np.eye(M) - (r/2)*Q)
         rhs = (np.eye(M) + (r/2)*Q) @ sol[n, :]

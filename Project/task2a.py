@@ -66,7 +66,6 @@ def saveRefSol(Mstar, order, filename):
         pickle.dump(refSol, fi)
 
 
-
 def calcError(Mstar, order, filename):
     '''Calculates the relative error with the reference solution'''
     refSol = None
@@ -74,24 +73,32 @@ def calcError(Mstar, order, filename):
     with open(filename, 'rb') as fi: # Fetches the calculated reference solution
         refSol = pickle.load(fi)
 
-    Mlist = [i for i in range(5, 100)]
-    Mlist += [200,300,400,500,700,900,1000]
+    #Mlist = [i for i in range(5, 100)]
+    #Mlist += [50,100,200,300,400,500,600,700]
+    
+    ints = np.array([2,4,5,8,10,20,25,40,50,100,125])  #Mstar=1000 is divisible by these integers
+    Mlist = np.array(Mstar/ints, dtype=int)
     errorList = []
     hList = []
     hList2 = []
 
     # Piecewise constant function uStar
-    piecewise = lambda Ustar, M, Mstar : [Ustar[math.floor(i*(Mstar + 1)/(M + 1))] for i in range(M + 1)]
+    #piecewise = lambda Ustar, M, Mstar : [Ustar[math.floor(i*(Mstar + 1)/(M + 1))] for i in range(M + 1)]
 
-    for M in Mlist:
-        sol = calcSol(M, order, plot = False)
+    for i in range(len(Mlist)):
+        if (Mstar % ints[i]) != 0:
+            print('Wrong int, did not work!',ints[i])
+            break
+        sol = calcSol(Mlist[i], order, plot = False)
         u = sol[refTime,:]
-        uStar = np.array(piecewise(refSol[refTime,:], M, Mstar))
+        #uStar = np.array(piecewise(refSol[refTime,:], M, Mstar))
+        uStar = refSol[refTime,0::ints[i]]
+        
         err = e_l(u, uStar)
 
         errorList.append(err)
-        hList.append(1/(M + 1))
-        hList2.append((1/(M + 1))**2)
+        hList.append(1/(Mlist[i] + 1))
+        hList2.append((1/(Mlist[i] + 1))**2)
            
     
     plt.plot(Mlist, hList2, label="$O(h^2)$", linestyle='dashed') 
@@ -107,7 +114,7 @@ def calcError(Mstar, order, filename):
 Mstar = 1000
 filename = 'refSol.pk'
 
-saveRefSol(Mstar, 2, filename) # Only needs to be run once, or if you change Mstar
+#saveRefSol(Mstar, 2, filename) # Only needs to be run once, or if you change Mstar
 calcError(Mstar, 2, filename)
 
 
