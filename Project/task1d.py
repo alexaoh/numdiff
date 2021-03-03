@@ -90,32 +90,26 @@ def plot_errors_UMR(save = False):
         plt.savefig("loglogtask1dUMR.pdf")
     plt.show()
 
-
+ 
 ##--------- AMR--------------
-# problems in second order func;
-# 1) Have to discard U_-1 and set h_-1=h_0
-# 2) The error is increasing at first step, but also in other steps. Perhaps this is normal.
+#error flattens out for second_order forward refinement
 
 # problems in first order func;
 # 1) looks more like second order to me...
 
-# problems in AMR func;
-# 1) seems like the endpoints won't refine. Look at bar-plot of error. Some x-intervals are not changing at all!
-# 2) Too much refinement for each step, can we reduce this somehow and thereby get more points in the error plot
 
-
-def coeff_stencil(i,h): #i can go from i=1 to i=M
+def coeff_stencil(i,h): # i=1 to i=M
     #d_p, d_m, d_2m = d_i+1, d_i-1, d_i-2
-    if i==1:
-        d_2m = 2*h[0] #vet egt. ikke h_-1, setter h_-1=h_0
+    if i==1:    #use a 3-point stencil with equal spacing at first iteration, that means h[0]=h[1].
+        b = c = 1/h[0]**2
+        a = 0
     else:
         d_2m = h[i-2] + h[i-1]
-    d_p = h[i]
-    d_m = h[i-1]
-    a = 2 * (d_p - d_m) / (d_2m*(d_2m + d_p)*(d_2m - d_m)) 
-    b = 2 * (d_2m - d_p) / (d_m*(d_2m - d_m)*(d_m + d_p))
-    c = 2 * (d_2m + d_m) / (d_p*(d_m + d_p)*(d_2m + d_p))
-   
+        d_p = h[i]
+        d_m = h[i-1]
+        a = 2 * (d_p - d_m) / (d_2m*(d_2m + d_p)*(d_2m - d_m)) 
+        b = 2 * (d_2m - d_p) / (d_m*(d_2m - d_m)*(d_m + d_p))
+        c = 2 * (d_2m + d_m) / (d_p*(d_m + d_p)*(d_2m + d_p))
     return a, b, c
 
 
@@ -130,12 +124,9 @@ def num_sol_AMR_second(x):
         a[i],b[i],c[i] = coeff_stencil(i+1,h) 
     #care for the indices; a[0] = a_1 in the scheme
     
-    #I disard U_-1, don't know how to get rid of it in the difference scheme, aka I set a[0]=0 (a_1 = 0)
-    a[0] = 0
-    #Note; Here using sparse.diags, not sparse.spdiags!! - only for me to better control what comes in to Ah
     data = [a[2:], b[1:], -(a+b+c), c[:-1]]
-    diagonals = np.array([-2,-1, 0, 1])
-    Ah = diags(data, diagonals).toarray()
+    diagonals = np.array([-2,-1, 0, 1])  
+    Ah = diags(data, diagonals).toarray()  #Note; Here using sparse.diags, not sparse.spdiags!
     
     alpha = anal_solution(0)
     beta = anal_solution(1)
@@ -145,7 +136,6 @@ def num_sol_AMR_second(x):
     f_vec[1] = f_vec[1] - a[1]*alpha
     f_vec[-1] = f_vec[-1] - c[-1]*beta
 
-    # Solve linear system. 
     Usol = la.solve(Ah, f_vec)
     Usol = np.insert(Usol, 0, alpha)
     Usol = np.append(Usol,beta)
@@ -179,11 +169,11 @@ def num_sol_AMR_first(x):  #uses the 3-point stencil with non-uniform grid
     return Usol
 
 
-def AMR(x0, steps, num_solver): #num_solver = function for first or second order method solver
+def AMR(x0, steps, num_solver): 
     """Uses mesh refinement 'steps' times. Finds the error, x-grid and numerical solution for each step."""
     disc_error = np.zeros(steps+1)
     M_list = np.zeros(steps+1)
-    Usol_M = [num_solver(x0)] #using regular lists so we can append arrays of different shapes
+    Usol_M = [num_solver(x0)]
     X_M = [x0]
     for k in range(steps):
         M_list[k] = len(X_M[-1])-2
@@ -191,24 +181,26 @@ def AMR(x0, steps, num_solver): #num_solver = function for first or second order
         u = anal_solution(X_M[-1])        
         disc_error[k] = la.norm(Usol_M[-1] - u)/la.norm(u) #relative disc_error
         
-        error_ave = np.average(np.abs(Usol_M[-1]-u)) # using average error, no contribution to error at boundary
-            
-        #refine the grid, changed to adding x-points after the node
-        x = np.copy(X_M[-1])
+        error_ave = np.average(np.abs(Usol_M[-1]-u))
+
+        #x = np.copy(X_M[-1])
+        '''
+        # Backward refinement. Add refinement on last interval + ensure first and second interval are equally long!
         n = 0
         for i in range(1,len(Usol_M[-1])-1): #know the correct values at the boundary
             if abs(Usol_M[-1][i]-u[i]) > error_ave:     
-                x = np.insert(x,i+n,(X_M[-1][i]+X_M[-1][i-1])/2)  #<-- now it is backward refinement, error flattens out for 2nd order
+                x = np.insert(x,i+n,(X_M[-1][i]+X_M[-1][i-1])/2)  #<-- now it is backward refinement
                 n += 1
-                
+        '''     
         
         '''
-        #----Jostein sin implementasjon-----
-        #function for forward refinement, the for-loop above gave the same result with change in indices (except for the left interval)
+        #----Jostein sin implementasjon
+        # Forward refinement
+        #Function for forward refinement, ensures first and second interval are equally long.
         n = 0
         i = 2
         while (i < len(x)-1):
-            if abs(Usol_M[-1][i-n]-u[i-n]) > error_ave:
+            if abs(Usol_M[-1][i-n]-u[i-n]) > 0.5*error_ave:
                 x = np.insert(x, i+1, (x[i]+x[i+1])/2)
                 i += 2
                 n += 1
@@ -220,27 +212,26 @@ def AMR(x0, steps, num_solver): #num_solver = function for first or second order
         '''
         
         #Dette var også et forsøk på å diskretisere i siste endepunkt, men sannsynligvis ikke hensiktsmessig likevel. 
-        # if abs(Usol_M[-1][-2]-u[-2]) > error_ave:
+        #    if abs(Usol_M[-1][-2]-u[-2]) > error_ave:
         #     x = np.append(x, (X_M[-1][-3]+X_M[-1][-2])/2)
 
 
         ##### Alex tried something else below, but the order flattens out and the error does not decrease (only flattens for second order however!!). 
-        # x = list(np.copy(X_M[-1]))
+        x = list(np.copy(X_M[-1]))
         
-        # for i in range(len(Usol_M[-1])):
-        #     if abs(Usol_M[-1][i]-u[i]) > error_ave:
-        #         small_list = [x[i], (x[i]+x[i+1])/2] # Increase points forwards instead of backwards. 
-        #         x[i] = small_list
-        #     else:
-        #         x[i] = [x[i]]
+        for i in range(len(Usol_M[-1])):
+            if abs(Usol_M[-1][i]-u[i]) > error_ave:  #It works with 0.5*error_ave, perhaps becuase then it is almost like UMR.
+                small_list = [x[i], (x[i]+x[i+1])/2] 
+                x[i] = small_list
+            else:
+                x[i] = [x[i]]
                 
-        
-        # x = np.array(sum(x, []))
+        x = np.array(sum(x, []))
 
         X_M.append(x)
         Usol_M.append(num_solver(x))
-    
-    #need to add the last error and M-number
+        
+    #add last elements
     u = anal_solution(X_M[-1])
     disc_error[-1] = la.norm(Usol_M[-1]-u)/la.norm(u)
     M_list[-1] = len(X_M[-1])-2
@@ -264,14 +255,13 @@ def test_plot_AMR_solver(num_solver):
 
 #test_plot_AMR_solver(num_sol_AMR_second)
 
-#plotting error, here disc_error. Also need cont_error
+#plotting error, here disc_error. Also need cont_error!
 M = 9
 x0 = np.linspace(0, 1, M+2)
-steps = 16  # =16
+steps = 11  # =16
 
 U_1, X_1, disc_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
 U_2, X_2, disc_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second) 
-
 
 # Does not behave quite like in the presentations. 
 def plot_bar_error(X,U,start,stop):
@@ -284,8 +274,7 @@ def plot_bar_error(X,U,start,stop):
     for i in range(start,stop):    
         h = X[i][2:] - X[i][1:-1]
         ave = np.average(np.abs(U[i]-anal_solution(X[i]))) #average AMR
-        #max_error = np.amax(np.abs(U[i]-anal_solution(X[i]))) #max AMR
-        #plt.plot(X[i],np.ones_like(X[i])*0.7*max_error,label='inf_norm',linestyle='dashed') #max AMR
+
         axs.flatten()[i].plot(X[i],np.ones_like(X[i])*ave,label='ave',linestyle='dashed') #average AMR
         axs.flatten()[i].bar(X[i][1:-1],np.abs(U[i][1:-1]-anal_solution(X[i][1:-1])),width=h,align='edge',label=str(i))
     
@@ -293,7 +282,7 @@ def plot_bar_error(X,U,start,stop):
     fig.tight_layout()
     plt.show()
 
-#plot_bar_error(X_1,U_1,0,steps)
+plot_bar_error(X_2,U_2,0,steps)
 
 
 def plot_AMR_errors():
@@ -308,4 +297,4 @@ def plot_AMR_errors():
     plt.grid()
     plt.show()
 
-plot_AMR_errors()
+#plot_AMR_errors()
