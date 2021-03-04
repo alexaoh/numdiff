@@ -45,11 +45,13 @@ def num_solution_M3():
 
     # Insert upper boundary condition last in U, since y increases "downwards" in yv. 
     U[-1, :] = np.array([0, np.sin(2*np.pi*1/4), np.sin(2*np.pi*2/4), np.sin(2*np.pi*3/4), 0]) 
+    
     # Need to unpack the solution vector with the correct coordinates. 
     for i in range(int(len(Usol)/3)):
         U[1, i+1] = Usol[i]
         U[2, i+1] = Usol[i+3]
         U[3, i+1] = Usol[i+6]
+
 
     return U, xv, yv
 
@@ -107,10 +109,10 @@ def num_solution_M9():
         U[3, i+1] = Usol[i+18]
         U[4, i+1] = Usol[i+27]
         U[5, i+1] = Usol[i+36]
-        U[6, i+1] = Usol[i+44]
-        U[7, i+1] = Usol[i+53]
-        U[8, i+1] = Usol[i+62]
-        U[9, i+1] = Usol[i+71]
+        U[6, i+1] = Usol[i+45]
+        U[7, i+1] = Usol[i+54]
+        U[8, i+1] = Usol[i+63]
+        U[9, i+1] = Usol[i+72]
 
     return U, xv, yv
 
