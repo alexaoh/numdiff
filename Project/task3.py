@@ -116,18 +116,19 @@ def num_solution_M9():
 
     return U, xv, yv
 
-U, xv, yv = num_solution_M9()
+U, xv, yv = num_solution_M3()
 
 def plot3d_sol(U, xv, yv, save = False, savename = "test"):
     # Taken from three_dim_plot (could be added to utilities or something in the end).
     fig = plt.figure()
     fig.suptitle("Num Sol, M = "+str(U.shape[0]-2))
     ax = fig.gca(projection="3d")
-    ax.view_init(azim=-45, elev=25) # Added some rotation to the figure. 
-    ax.plot_surface(xv, yv, U, cmap="seismic")
-    ax.set_xlabel("$x$")
-    ax.set_ylabel("$y$")
+    ax.view_init(azim=-35, elev=25) # Added some rotation to the figure. 
+    surface = ax.plot_surface(xv, yv, U, cmap="seismic")
+    ax.set_xlabel("$y$")
+    ax.set_ylabel("$x$")
     ax.set_zlabel("Intensity")
+    fig.colorbar(surface, shrink=0.5, aspect=5)
     if save:
         plt.savefig(savename+".pdf")
     plt.show()

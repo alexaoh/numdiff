@@ -19,17 +19,19 @@ def num_solution_uniform_grid(M):
     point_counter = 1
 
     # List for upper boundary conditions. 
-    upper_bc = np.zeros(M+2)
+    #upper_bc = np.zeros(M+2)
+    # This is done in a better way below IMO. 
+    # Could perhaps also be improved for F later. 
 
     # Change some elements to match the correct linear system + construct F. 
     for i in range(M, M*M, M):
         A[i-1, i] = A[i, i-1] = 0
         F[i-1] = -np.sin(2*np.pi*point_counter/(M+1))
-        upper_bc[point_counter] =  np.sin(2*np.pi*point_counter/(M+1))
+        #upper_bc[point_counter] =  np.sin(2*np.pi*point_counter/(M+1))
         point_counter += 1
     
     # Add values out of loop-bound.  
-    upper_bc[point_counter] = np.sin(2*np.pi*point_counter/(M+1))
+    #upper_bc[point_counter] = np.sin(2*np.pi*point_counter/(M+1))
     F[M**2-1] = -np.sin(2*np.pi*point_counter/(M+1))
 
     # Solve linear system. 
@@ -44,11 +46,12 @@ def num_solution_uniform_grid(M):
     U = np.zeros_like(xv) # Grid for solution. Need to insert solution into this, including boundary conditions. 
 
     # Insert upper boundary condition last in U, since y increases "downwards" in yv. 
-    U[-1, :] = upper_bc
-    
+    #U[:, -1] = upper_bc
+    t = np.linspace(0, 1, M+2)
+    U[:, -1] = np.sin(2*np.pi*t)
+
     # Need to unpack the solution vector with the correct coordinates. 
     for i in range(int(len(Usol)/M)): # This gives the rows (x-values).
-        
         for j in range(1,M+1): # This gives the columns (y-values).
             U[j, i+1] = Usol[i+(M*(j-1))]
             
