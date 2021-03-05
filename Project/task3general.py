@@ -57,6 +57,9 @@ def num_solution_uniform_grid(M):
             
     return U, xv, yv
 
+def anal_solution(x, y):
+    """Analytic solution to the 2D Laplace equation."""
+    return (1/np.sinh(2*np.pi))*np.sinh(2*np.pi*y)*np.sin(2*np.pi*x)
 
-U, xv, yv = num_solution_uniform_grid(M = 50)
-plot3d_sol(U, xv, yv)
+U, xv, yv = num_solution_uniform_grid(M = 9)
+plot3d_sol(U,xv, yv,  Uan=anal_solution)
