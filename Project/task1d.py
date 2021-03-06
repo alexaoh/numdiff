@@ -117,8 +117,7 @@ def num_sol_AMR_second(x):
     """Makes the matrix Ah, the discretization of U_xx, dependent on the grid x."""
     M = len(x)-2
     a, b, c = np.zeros(M),np.zeros(M),np.zeros(M)
-    h = np.zeros(len(x)-1)
-    h[:] = x[1:] - x[:-1]
+    h = np.diff(x)
     
     for i in range(M):
         a[i],b[i],c[i] = coeff_stencil(i+1,h) 
@@ -145,8 +144,7 @@ def num_sol_AMR_second(x):
 
 def num_sol_AMR_first(x):  #uses the 3-point stencil with non-uniform grid
     M = len(x)-2
-    h = np.zeros(len(x)-1)
-    h[:] = x[1:] - x[:-1]
+    h = np.diff(x)
  
     b = 2/(h[:-1]*(h[:-1]+h[1:]))    #b[0] = b_1, b[-1] = b_M, b is M long
     c = 2/(h[1:]*(h[1:] + h[:-1]))
@@ -168,6 +166,14 @@ def num_sol_AMR_first(x):  #uses the 3-point stencil with non-uniform grid
     
     return Usol
 
+def calc_cell_errors(u,U):
+    '''Calulculates an error for each cell by taking the avg of the error in the endpoints.'''
+    n = len(u) - 1 # Number of cells
+    cell_errors = np.zeros(n)
+    for i in range(n):
+        cell_errors[i] = abs(U[i] - u[i]) #(np.abs(u[i] - U[i]) + np.abs(u[i + 1] - U[i + 1]))
+    return cell_errors
+
 
 def AMR(x0, steps, num_solver): 
     """Uses mesh refinement 'steps' times. Finds the error, x-grid and numerical solution for each step."""
@@ -177,11 +183,10 @@ def AMR(x0, steps, num_solver):
     X_M = [x0]
     for k in range(steps):
         M_list[k] = len(X_M[-1])-2
-        
         u = anal_solution(X_M[-1])        
         disc_error[k] = la.norm(Usol_M[-1] - u)/la.norm(u) #relative disc_error
         
-        error_ave = np.average(np.abs(Usol_M[-1]-u))
+        #error_ave = np.average(np.abs(Usol_M[-1]-u))
 
         #x = np.copy(X_M[-1])
         '''
@@ -217,7 +222,10 @@ def AMR(x0, steps, num_solver):
 
 
         ##### Alex tried something else below, but the order flattens out and the error does not decrease (only flattens for second order however!!). 
+        '''
         x = list(np.copy(X_M[-1]))
+
+    
         
         for i in range(len(Usol_M[-1])):
             if abs(Usol_M[-1][i]-u[i]) > error_ave:  #It works with 0.5*error_ave, perhaps becuase then it is almost like UMR.
@@ -228,6 +236,39 @@ def AMR(x0, steps, num_solver):
                 
         x = np.array(sum(x, []))
 
+        '''
+
+        x = list(np.copy(X_M[-1]))
+        cell_errors = calc_cell_errors(u, Usol_M[-1])
+        tol = 1 * np.average(cell_errors)
+       
+        #plt.bar([i for i in range(len(cell_errors))],cell_errors)
+        #plt.plot(x, [tol for i in range(len(x))])
+        #plt.show()
+
+        
+        j = 0 # Index for x in case we insert points
+
+        # For testing if first or second cell have been refined
+        firstCell = False
+        for i in range(len(cell_errors)):
+            if cell_errors[i] > tol:
+                x.insert(j+1, x[j] + 0.5 * (x[j+1] - x[j]))
+                j += 1
+                
+                # Tests to ensure that first and second cell have same length
+                if i == 0:
+                    firstCell = True
+                    x.insert(j+1, x[j] + 0.5 * (x[j+1] - x[j]))
+                    j += 1
+                if i == 2 and not firstCell:
+                    x.insert(1, x[0] + 0.5 * (x[1] - x[0]))
+                    j += 1
+            j += 1
+        
+
+
+        x = np.array(x)    
         X_M.append(x)
         Usol_M.append(num_solver(x))
         
@@ -258,7 +299,7 @@ def test_plot_AMR_solver(num_solver):
 #plotting error, here disc_error. Also need cont_error!
 M = 9
 x0 = np.linspace(0, 1, M+2)
-steps = 11  # =16
+steps = 15
 
 U_1, X_1, disc_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
 U_2, X_2, disc_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second) 
@@ -273,28 +314,31 @@ def plot_bar_error(X,U,start,stop):
     fig, axs = plt.subplots(rows, cols, sharex=True, figsize=(15,15))
     for i in range(start,stop):    
         h = X[i][2:] - X[i][1:-1]
-        ave = np.average(np.abs(U[i]-anal_solution(X[i]))) #average AMR
+        u = anal_solution(X[i])   
+        cell_errors = calc_cell_errors(u, U[i])
+        tol = 1 * np.average(cell_errors)
 
-        axs.flatten()[i].plot(X[i],np.ones_like(X[i])*ave,label='ave',linestyle='dashed') #average AMR
-        axs.flatten()[i].bar(X[i][1:-1],np.abs(U[i][1:-1]-anal_solution(X[i][1:-1])),width=h,align='edge',label=str(i))
+    
+        axs.flatten()[i].plot([j for j in range(len(cell_errors))], [tol for j in range(len(cell_errors))],label='ave',linestyle='dashed') #average AMR
+        axs.flatten()[i].bar([j for j in range(len(cell_errors))], cell_errors, align='edge',label=str(i))
     
     #plt.legend()
     fig.tight_layout()
     plt.show()
 
-plot_bar_error(X_2,U_2,0,steps)
+#plot_bar_error(X_2,U_2,0,steps)
 
 
 def plot_AMR_errors():
     h = 1/(M_2+1)
-    plt.plot(M_1, disc_error_1, label="e_l_first")
-    plt.plot(M_2, disc_error_2, label="e_l_second")
-    plt.plot(M_2, 80*h, label="O(h)", linestyle='dashed')
-    plt.plot(M_2, 80*h**2, label="O(h^2)", linestyle='dashed')
+    plt.plot(M_1, disc_error_1, label="$e_l^r$ (3 point stencil)")
+    plt.plot(M_2, disc_error_2, label="$e_l^r$ (4 point stencil)")
+    plt.plot(M_2, 2*h, label="$O(h)$", linestyle='dashed')
+    plt.plot(M_2, 71*h**2, label="$O(h^2)$", linestyle='dashed')
     plt.yscale('log')
     plt.xscale('log')
     plt.legend()
     plt.grid()
     plt.show()
 
-#plot_AMR_errors()
+plot_AMR_errors()
