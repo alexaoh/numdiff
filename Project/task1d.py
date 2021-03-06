@@ -92,10 +92,9 @@ def plot_errors_UMR(save = False):
 
  
 ##--------- AMR--------------
-#error flattens out for second_order forward refinement
-
 # problems in first order func;
-# 1) looks more like second order to me...
+# 1) error flattens out
+# 2) looks more like second order to me...
 
 
 def coeff_stencil(i,h): # i=1 to i=M
@@ -152,7 +151,7 @@ def num_sol_AMR_first(x):  #uses the 3-point stencil with non-uniform grid
     data = [b[1:], -(b+c), c[:-1]]   
     diagonals = np.array([-1, 0, 1])
     Ah = diags(data, diagonals).toarray()
-    
+        
     alpha = anal_solution(x[0])
     beta = anal_solution(x[-1])
     
@@ -162,7 +161,7 @@ def num_sol_AMR_first(x):  #uses the 3-point stencil with non-uniform grid
 
     Usol = la.solve(Ah,f_vec)
     Usol = np.insert(Usol, 0, alpha)
-    Usol = np.append(Usol,beta)
+    Usol = np.append(Usol, beta)
     
     return Usol
 
@@ -186,19 +185,45 @@ def AMR(x0, steps, num_solver):
         u = anal_solution(X_M[-1])        
         disc_error[k] = la.norm(Usol_M[-1] - u)/la.norm(u) #relative disc_error
         
-        #error_ave = np.average(np.abs(Usol_M[-1]-u))
-
-        #x = np.copy(X_M[-1])
+    
         '''
+        #error_ave = np.average(np.abs(Usol_M[-1]-u))
+        #x = np.copy(X_M[-1])
+
         # Backward refinement. Add refinement on last interval + ensure first and second interval are equally long!
         n = 0
-        for i in range(1,len(Usol_M[-1])-1): #know the correct values at the boundary
-            if abs(Usol_M[-1][i]-u[i]) > error_ave:     
-                x = np.insert(x,i+n,(X_M[-1][i]+X_M[-1][i-1])/2)  #<-- now it is backward refinement
+        error_list = (np.abs(Usol_M[-1][:-1]-u[:-1]) + np.abs(Usol_M[-1][1:]-u[1:]))/2
+        for i in range(len(error_list)):
+            if error_list[i] > error_ave:
+                x = np.insert(x,i+n+1,(X_M[-1][i]+X_M[-1][i+1])/2)        
                 n += 1
-        '''     
         
-        '''
+        if (x[2]-x[1]) != (x[1]-x[0]):  #ensure first and second interval are equally long, this might not be necessary for first order
+            x = np.insert(x, 1, x[1]/2)
+            
+       
+        ## Here, tried something new; Compare x-axis to the x-axis two steps earlier, if an interval has not yet been refined -> refine it.
+        if k>=2:
+            h_now = x[1:] - x[:-1]
+            h_earlier = X_M[k-2][1:] - X_M[k-2][:-1]
+            if np.isclose(np.amax(h_now),np.amax(h_earlier)):
+                indices = np.where(np.isclose(h_now,np.amax(h_now)))[0]
+                z = np.copy(x)
+                
+                for j in range(len(indices)):
+                    i = indices[j]
+                    x = np.insert(x,i+1+j,(z[i]+z[i+1])/2)
+          
+    
+        #back + forward refinement
+        for i in range(1,len(Usol_M[-1])-1): #know the correct values at the boundary
+            if abs(Usol_M[-1][i]-u[i]) > error_ave:
+                x = np.insert(x,i+n+1,X_M[-1][i] + (X_M[-1][i+1]-X_M[-1][i])/4)     
+                x = np.insert(x,i+n,X_M[-1][i]-(X_M[-1][i]-X_M[-1][i-1])/4)
+                n += 2
+        if (x[2]-x[1]) != (x[1]-x[0]):  #insert a node to ensure first and second interval are equally long
+            x = np.insert(x, 1, x[1]/2)
+    
         #----Jostein sin implementasjon
         # Forward refinement
         #Function for forward refinement, ensures first and second interval are equally long.
@@ -214,7 +239,7 @@ def AMR(x0, steps, num_solver):
         if abs(Usol_M[-1][1]-u[1]) > error_ave:
             x = np.insert(x, 2, (x[1]+x[2])/2)
             x = np.insert(x, 1, (x[0]+x[1])/2)
-        '''
+        
         
         #Dette var også et forsøk på å diskretisere i siste endepunkt, men sannsynligvis ikke hensiktsmessig likevel. 
         #    if abs(Usol_M[-1][-2]-u[-2]) > error_ave:
@@ -222,10 +247,8 @@ def AMR(x0, steps, num_solver):
 
 
         ##### Alex tried something else below, but the order flattens out and the error does not decrease (only flattens for second order however!!). 
-        '''
+        
         x = list(np.copy(X_M[-1]))
-
-    
         
         for i in range(len(Usol_M[-1])):
             if abs(Usol_M[-1][i]-u[i]) > error_ave:  #It works with 0.5*error_ave, perhaps becuase then it is almost like UMR.
@@ -242,11 +265,6 @@ def AMR(x0, steps, num_solver):
         cell_errors = calc_cell_errors(u, Usol_M[-1])
         tol = 1 * np.average(cell_errors)
        
-        #plt.bar([i for i in range(len(cell_errors))],cell_errors)
-        #plt.plot(x, [tol for i in range(len(x))])
-        #plt.show()
-
-        
         j = 0 # Index for x in case we insert points
 
         # For testing if first or second cell have been refined
@@ -302,9 +320,12 @@ x0 = np.linspace(0, 1, M+2)
 steps = 15
 
 U_1, X_1, disc_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
-U_2, X_2, disc_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second) 
+U_2, X_2, disc_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second)
+ 
+#for i in range(steps+1):
+#    print(X_2[i][:10])
+# Does not behave quite like in the presentations
 
-# Does not behave quite like in the presentations. 
 def plot_bar_error(X,U,start,stop):
     if stop > steps + 1:
         return 0
@@ -313,6 +334,7 @@ def plot_bar_error(X,U,start,stop):
     cols = 4
     fig, axs = plt.subplots(rows, cols, sharex=True, figsize=(15,15))
     for i in range(start,stop):    
+
         h = X[i][2:] - X[i][1:-1]
         u = anal_solution(X[i])   
         cell_errors = calc_cell_errors(u, U[i])
@@ -321,6 +343,15 @@ def plot_bar_error(X,U,start,stop):
     
         axs.flatten()[i].plot([j for j in range(len(cell_errors))], [tol for j in range(len(cell_errors))],label='ave',linestyle='dashed') #average AMR
         axs.flatten()[i].bar([j for j in range(len(cell_errors))], cell_errors, align='edge',label=str(i))
+        '''
+        h = X[i][1:] - X[i][:-1]
+        u = anal_solution(X[i])
+        ave = np.average(np.abs(U[i]-u))
+        x = (X[i][1:]+X[i][:-1])/2
+        error = (np.abs(U[i][1:]-u[1:]) + np.abs(U[i][:-1]-u[:-1]))/2
+        axs.flatten()[i].plot(X[i],np.ones_like(X[i])*ave,label='ave',linestyle='dashed')
+        axs.flatten()[i].bar(x, error, width=h,align='center',label=str(i))
+        '''
     
     #plt.legend()
     fig.tight_layout()
