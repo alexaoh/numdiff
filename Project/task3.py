@@ -124,10 +124,10 @@ def plot3d_sol(U, xv, yv, Uan = False, savename = False):
     if callable(Uan):
         fig.suptitle("Num Sol, M = "+str(U.shape[0]-2)+", + An Sol")
     else: 
-        fig.suptitle("Num Sol, M = "+str(U.shape[0]-2))
+        fig.suptitle("Num Sol, Mx = "+str(U.shape[1]-2)+" My = "+str(U.shape[0]-2))
     ax = fig.gca(projection="3d")
     ax.view_init(azim=55, elev=15) # Added some rotation to the figure. 
-    surface = ax.plot_surface(yv, xv, U, cmap="seismic") # Switched x and y in the numerival solution in order to get correct axes. Cannot find the problem!!?
+    surface = ax.plot_surface(xv, yv, U, cmap="seismic") # Switched x and y in the numerival solution in order to get correct axes. Cannot find the problem!!?
     ax.set_xlabel("$x$")
     ax.set_ylabel("$y$")
     ax.set_zlabel("Intensity")

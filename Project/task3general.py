@@ -40,7 +40,7 @@ def num_solution_uniform_grid(M):
     
     # Next, want to plot the solution. 
 
-    x = y = np.linspace(0, 1, M+2) # Gives three internal points + boundaries.
+    x = y = np.linspace(0, 1, M+2) # Gives internal points + boundaries.
 
     xv, yv = np.meshgrid(x, y)
 
@@ -48,8 +48,8 @@ def num_solution_uniform_grid(M):
 
     # Insert upper boundary condition last in U, since y increases "downwards" in yv. 
     #U[:, -1] = upper_bc
-    t = np.linspace(0, 1, M+2)
-    U[:, -1] = np.sin(2*np.pi*t)
+    t = np.linspace(0, 1, M+2) # Could also just use x here it looks like. 
+    U[:, -1] = np.sin(2*np.pi*t) # Det er noe som går galt her ja, selv om resultatet blir rett. Den burde legges til i siste rad, ikke kolonne!
 
     # Need to unpack the solution vector with the correct coordinates. 
     for i in range(int(len(Usol)/M)): # This gives the rows (x-values).
@@ -58,40 +58,40 @@ def num_solution_uniform_grid(M):
             
     return U, xv, yv
 
-def anal_solution(x, y):
+def analytic_solution(x, y):
     """Analytic solution to the 2D Laplace equation."""
     return (1/np.sinh(2*np.pi))*np.sinh(2*np.pi*y)*np.sin(2*np.pi*x)
 
-#U, xv, yv = num_solution_uniform_grid(M = 9)
-#plot3d_sol(U,xv, yv,  Uan=anal_solution)
+#U, xv, yv = num_solution_uniform_grid(M = 50)
+#plot3d_sol(U, xv, yv, Uan=analytic_solution)
 
 
 ## Make convergence plots below. Dette må lages spesifikt for hver retning tenker jeg. 
 
-M = np.arange(3, 1012/5, 100, dtype = int)
-discrete_error = np.zeros(len(M))
-cont_error = np.zeros(len(M))
+# M = np.arange(3, 1012/5, 100, dtype = int)
+# discrete_error = np.zeros(len(M))
+# cont_error = np.zeros(len(M))
 
-for i, m in enumerate(M):
-    x = np.linspace(0, 1, m+2)
-    Usol, xv, yv = num_solution_uniform_grid(m)
-    analsol = anal_solution(xv, yv)
+# for i, m in enumerate(M):
+#     x = np.linspace(0, 1, m+2)
+#     Usol, xv, yv = num_solution_uniform_grid(m)
+#     analsol = analytic_solution(xv, yv)
 
-    discrete_error[i] = e_l(Usol, analsol)
+#     discrete_error[i] = e_l(Usol, analsol)
 
-    #interpU = interp1d(x, Usol, kind = 'cubic')
-    #cont_error[i] = e_L(interpU, anal_solution, x[0], x[-1]) # Denne e_L må nok lages spesifikt til denne oppgaven!
+#     #interpU = interp1d(x, Usol, kind = 'cubic')
+#     #cont_error[i] = e_L(interpU, anal_solution, x[0], x[-1]) # Denne e_L må nok lages spesifikt til denne oppgaven!
 
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.set_xscale("log")
-ax.set_yscale("log")
-ax.plot(M, discrete_error, label=r"$e^r_l$", color = "blue", linewidth = 3)
-#ax.plot(M, cont_error, label = r"$e^r_{L_2}$", color = "yellow", linestyle = "--", linewidth = 2)
-#ax.plot(M, (lambda x: 1/x**2)(M), label=r"$O$($h^2$)", color = "red", linewidth = 2)
-ax.set_ylabel(r"Error $e^r_{(\cdot)}$")
-ax.set_xlabel("Number of points M")
-plt.legend()
-plt.grid() 
-#plt.savefig("convergencePlotTask3.pdf")
-plt.show() 
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# ax.set_xscale("log")
+# ax.set_yscale("log")
+# ax.plot(M, discrete_error, label=r"$e^r_l$", color = "blue", linewidth = 3)
+# #ax.plot(M, cont_error, label = r"$e^r_{L_2}$", color = "yellow", linestyle = "--", linewidth = 2)
+# #ax.plot(M, (lambda x: 1/x**2)(M), label=r"$O$($h^2$)", color = "red", linewidth = 2)
+# ax.set_ylabel(r"Error $e^r_{(\cdot)}$")
+# ax.set_xlabel("Number of points M")
+# plt.legend()
+# plt.grid() 
+# #plt.savefig("convergencePlotTask3.pdf")
+# plt.show() 
