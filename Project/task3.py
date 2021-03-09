@@ -3,7 +3,7 @@
 Trying to generalize the methods used in task3.py, in order to plot convergence plots eventually. 
 """
 
-from scipy.sparse import spdiags # Make sparse matrices with scipy.
+from scipy.sparse import diags # Make sparse matrices with scipy.
 import scipy.sparse.linalg
 import numpy as np
 import numpy.linalg as la
@@ -21,11 +21,11 @@ def num_solution_Mx_My(Mx, My):
     M2 = Mx*My
 
     # Construct A. 
-    data = np.array([np.full(M2, 1), np.full(M2, -4), np.full(M2, 1), 
-                        np.full(M2, 1), np.full(M2, 1)])
-    diags = np.array([-1, 0, 1, -My, My])
+    data = np.array([np.full(M2, 1)[:-1], np.full(M2, -4), np.full(M2, 1)[:-1], 
+                        np.full(M2, 1)[:-My], np.full(M2, 1)[:-My]]) # Litt jalla måte å gjøre det på, men måtte fikse rett lengde på diagonalene. 
+    diag = np.array([-1, 0, 1, -My, My])
 
-    A = spdiags(data, diags, M2, M2).toarray()
+    A = diags(data, diag, format = "csc")
     
     # Construct F.
     F = np.zeros(M2)
@@ -49,7 +49,8 @@ def num_solution_Mx_My(Mx, My):
     F[M2-1] = -np.sin(2*np.pi*point_counter/(Mx+1))
     
     # Solve linear system. 
-    Usol = la.solve(A, F) # The solver needs to be changed in order to solve larger systems!
+    # Changed to a sparse solver in order to solve larger systems. If not enough; change to an iterative solver. 
+    Usol = scipy.sparse.linalg.spsolve(A, F) 
     
     # Next, want to plot the solution. 
 
@@ -71,5 +72,5 @@ def num_solution_Mx_My(Mx, My):
 
     return U, xv, yv
 
-# U, xv, yv = num_solution_Mx_My(Mx = 30, My = 10)
-# plot3d_sol(U, xv, yv)
+U, xv, yv = num_solution_Mx_My(Mx = 100, My = 100)
+plot3d_sol(U, xv, yv)
