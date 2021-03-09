@@ -48,7 +48,7 @@ def num_sol_UMR(x,M,order): #order = 1 or 2
     Usol = np.append(Usol,beta)
     return Usol
 
-### Uniform mesh refinement UMR, here using disc_error
+### Uniform mesh refinement UMR
 M_list = np.linspace(20,1000,20,dtype=int)
 h_list = 1/(M_list+1)
 
@@ -67,21 +67,24 @@ for i, m in enumerate(M_list):
     e_1_disc[i] = e_l(first_order_num, u)
     e_2_disc[i] = e_l(second_order_num, u)
     
+    # Continuous norms. 
     interpU_first = interp1d(x, first_order_num, kind = 'cubic')
     interpU_second = interp1d(x, second_order_num, kind = 'cubic')
 
-    # Continuous norms. 
     e_1_cont[i] = e_L(interpU_first, anal_solution, x[0], x[-1])
     e_2_cont[i] = e_L(interpU_second, anal_solution, x[0], x[-1])
 
 def plot_errors_UMR(save = False):
     """Encapsulation, to avoid commenting while development."""
-    plt.plot(M_list,e_1_disc,label="l2_first", color = "red")
-    plt.plot(M_list,8*h_list,label=r"O$(h)$",linestyle='dashed', color = "red")
+    plt.plot(M_list,e_2_cont,label=r"$e^r_{L_2}$ second", color = "yellow",marker='o')
+    plt.plot(M_list,e_1_cont,label=r"$e^r_{L_2}$ first", color = "green",marker='o')
+    plt.plot(M_list,e_1_disc,label=r"$e^r_{l}$ first", color = "red",marker='o',linestyle = "--")
+    plt.plot(M_list,e_2_disc,label=r"$e^r_l$ second", color = "blue",marker='o',linestyle = "--")
+    plt.plot(M_list,7*h_list,label=r"O$(h)$",linestyle='dashed', color = "red")
     plt.plot(M_list,10*h_list**2,label=r"O$(h^2)$",linestyle='dashed', color = "blue")
-    plt.plot(M_list,e_2_disc,label="l2_second", color = "blue")
-    plt.plot(M_list,e_2_cont,label="L2_second", color = "orange", linestyle = "dotted")
-    plt.plot(M_list,e_1_cont,label="L2_first", color = "green", linestyle = "dotted")
+    
+    plt.ylabel(r"Error $e^r_{(\cdot)}$")
+    plt.xlabel("Number of points $M$")
     plt.yscale('log')
     plt.xscale('log')
     plt.legend()
@@ -90,12 +93,9 @@ def plot_errors_UMR(save = False):
         plt.savefig("loglogtask1dUMR.pdf")
     plt.show()
 
- 
-##--------- AMR--------------
-# problems in first order func;
-# 1) error flattens out
-# 2) looks more like second order to me...
+#plot_errors_UMR()
 
+##--------- AMR--------------
 
 def coeff_stencil(i,h): # i=1 to i=M
     #d_p, d_m, d_2m = d_i+1, d_i-1, d_i-2
@@ -145,7 +145,7 @@ def num_sol_AMR_first(x):  #uses the 3-point stencil with non-uniform grid
     M = len(x)-2
     h = np.diff(x)
  
-    b = 2/(h[:-1]*(h[:-1]+h[1:]))    #b[0] = b_1, b[-1] = b_M, b is M long
+    b = 2/(h[:-1]*(h[:-1]+h[1:]))    
     c = 2/(h[1:]*(h[1:] + h[:-1]))
     
     data = [b[1:], -(b+c), c[:-1]]   
@@ -177,14 +177,17 @@ def calc_cell_errors(u,U):
 def AMR(x0, steps, num_solver): 
     """Uses mesh refinement 'steps' times. Finds the error, x-grid and numerical solution for each step."""
     disc_error = np.zeros(steps+1)
+    cont_error = np.zeros(steps+1)
     M_list = np.zeros(steps+1)
     Usol_M = [num_solver(x0)]
     X_M = [x0]
     for k in range(steps):
         M_list[k] = len(X_M[-1])-2
         u = anal_solution(X_M[-1])        
-        disc_error[k] = la.norm(Usol_M[-1] - u)/la.norm(u) #relative disc_error
-        
+        disc_error[k] = e_l(Usol_M[-1],u)
+         
+        interpU = interp1d(X_M[-1], Usol_M[-1], kind = 'cubic')
+        cont_error[k] = e_L(interpU, anal_solution, 0, 1)
     
         '''
         #error_ave = np.average(np.abs(Usol_M[-1]-u))
@@ -284,17 +287,17 @@ def AMR(x0, steps, num_solver):
                     j += 1
             j += 1
         
-
-
         x = np.array(x)    
         X_M.append(x)
         Usol_M.append(num_solver(x))
         
     #add last elements
     u = anal_solution(X_M[-1])
-    disc_error[-1] = la.norm(Usol_M[-1]-u)/la.norm(u)
+    disc_error[-1] = e_l(Usol_M[-1],u)
+    interpU = interp1d(X_M[-1], Usol_M[-1], kind = 'cubic')
+    cont_error[-1] = e_L(interpU, anal_solution, 0, 1)
     M_list[-1] = len(X_M[-1])-2
-    return Usol_M, X_M, disc_error, M_list
+    return Usol_M, X_M, disc_error, cont_error, M_list
 
 
 # testing the first or second order AMR solver
@@ -305,26 +308,22 @@ def test_plot_AMR_solver(num_solver):
     steps = 4
     U, X, _, _ = AMR(x,steps,num_solver)
     for i in range(0,steps+1):
-        #print(X[i])
         plt.plot(X[i],U[i],label=str(i))
 
     plt.plot(X[-1],anal_solution(X[-1]),label="An",linestyle='dotted')
     plt.legend()
     plt.show()
-
 #test_plot_AMR_solver(num_sol_AMR_second)
 
-#plotting error, here disc_error. Also need cont_error!
+
+#plotting errors
 M = 9
 x0 = np.linspace(0, 1, M+2)
-steps = 15
+steps = 16
 
-U_1, X_1, disc_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
-U_2, X_2, disc_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second)
- 
-#for i in range(steps+1):
-#    print(X_2[i][:10])
-# Does not behave quite like in the presentations
+U_1, X_1, disc_error_1, cont_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
+U_2, X_2, disc_error_2, cont_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second)
+
 
 def plot_bar_error(X,U,start,stop):
     if stop > steps + 1:
@@ -360,16 +359,22 @@ def plot_bar_error(X,U,start,stop):
 #plot_bar_error(X_2,U_2,0,steps)
 
 
-def plot_AMR_errors():
+def plot_AMR_errors(save=False):
     h = 1/(M_2+1)
-    plt.plot(M_1, disc_error_1, label="$e_l^r$ (3 point stencil)")
-    plt.plot(M_2, disc_error_2, label="$e_l^r$ (4 point stencil)")
-    plt.plot(M_2, 2*h, label="$O(h)$", linestyle='dashed')
-    plt.plot(M_2, 71*h**2, label="$O(h^2)$", linestyle='dashed')
+    plt.plot(M_1, disc_error_1, label="$e_l^r$ (3 point stencil)",color='red',marker='o',linewidth=2)
+    plt.plot(M_1, cont_error_1, label="$e_L^r$ (3 point stencil)",color='red',linestyle="--",marker='o',linewidth=2)
+    plt.plot(M_2, disc_error_2, label="$e_l^r$ (4 point stencil)",color='blue',marker='o',linewidth=2)
+    plt.plot(M_2, cont_error_2, label="$e_L^r$ (4 point stencil)",color='blue',linestyle="--",marker='o',linewidth=2)
+    plt.plot(M_2, 2*h, label="$O(h)$",color='green')
+    plt.plot(M_2, 71*h**2, label="$O(h^2)$",color='yellow')
+    plt.ylabel(r"Error $e^r_{(\cdot)}$")
+    plt.xlabel("Number of points M")
     plt.yscale('log')
     plt.xscale('log')
     plt.legend()
     plt.grid()
+    if save:
+        plt.savefig("loglogtask1dAMR.pdf")
     plt.show()
 
-plot_AMR_errors()
+#plot_AMR_errors()
