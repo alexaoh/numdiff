@@ -7,6 +7,7 @@ from scipy.sparse import diags # Make sparse matrices with scipy.
 import scipy.sparse.linalg
 import numpy as np
 import numpy.linalg as la
+import matplotlib.pyplot as plt
 from plotting_utilities import plot3d_sol
 from task3SpecialCases import analytic_solution
 
@@ -72,5 +73,38 @@ def num_solution_Mx_My(Mx, My):
 
     return U, xv, yv
 
-U, xv, yv = num_solution_Mx_My(Mx = 100, My = 100)
-plot3d_sol(U, xv, yv)
+#U, xv, yv = num_solution_Mx_My(Mx = 100, My = 100)
+#plot3d_sol(U, xv, yv)
+
+# Make convergence plot (first for discontinuous norm). Should we use NDOF instead? 
+# Generalize later!
+
+maximum = 1012/5
+Mx = np.arange(2, maximum, 10, dtype = int)
+discrete_error = np.zeros(len(Mx))
+My = 100
+for i, m in enumerate(Mx):
+    x = y = np.linspace(0, 1, m+2)
+    Usol = num_solution_Mx_My(Mx = m, My = My)
+    analsol = analytic_solution(x, y)
+
+    discrete_error[i] = la.norm(analsol-Usol)/la.norm(analsol)
+
+def plot_plots(savename = False):
+    """Encapsulation for development purposes."""
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.plot(Mx, discrete_error, label=r"$e^r_l$", color = "blue", marker = "o", linewidth = 3)
+    ax.plot(Mx, (lambda x: 400/x**0.5 )(Mx), label=r"$O$($h^{0.5}$)", color = "red", linewidth = 2)
+    ax.set_ylabel(r"Error $e^r_{(\cdot)}$")
+    ax.set_xlabel("Number of points "+r"$M_x$")
+    fig.suptitle(r"$M_y = $"+str(My)+" constant")
+    plt.legend()
+    plt.grid() 
+    if savename:
+        plt.savefig(savename+".pdf")
+    plt.show() 
+
+plot_plots()
