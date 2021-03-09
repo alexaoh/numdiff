@@ -79,17 +79,16 @@ def theta_method(x, t, theta):
     col[0] = -2
     col[1] = 1
     Ah = toeplitz(col)
+    b = (np.identity(M) +(1-theta)*r*Ah)
     
     lhs = np.zeros(M)
     lhs[0] = 1+2*theta*r
     lhs[1] = -theta*r
     for n in range(N):
-        b = (np.identity(M) +(1-theta)*r*Ah) @ U[n,1:-1]
-        U[n+1,1:-1] = solve_toeplitz(lhs,b)
+        U[n+1,1:-1] = solve_toeplitz(lhs,b @ U[n,1:-1])
         
         #U[n+1,1:-1] = la.solve((np.identity(M)-theta*r*Ah),RHS)
         #U[n+1,1:-1] = spsolve((np.identity(M)-theta*r*Ah),RHS)
-        
     return U
 
 #x = np.linspace(0,1,M+2)
@@ -99,68 +98,81 @@ U_CN = theta_method(x,t,1/2)
 
 plt.plot(x,U_CN[-1,:],label='CN')
 plt.plot(x,U_BE[-1,:],label='BE')
-plt.plot(x,anal_solution(x,t[-1]),label='Anal')  
+plt.plot(x,anal_solution(x,t[-1]),label='Analytic')  
 plt.legend()
 plt.show()
 '''
 
 #choose time t[-1]=T=0.2, as the time to look at errors.
-T = 0.2
-time_index = -1
 
-num = 7
-M = np.linspace(10,500,num,dtype=int) 
-
-
-r0 = 4 # this is the relation we want to keep, we can maybe increase to >1 if N gets too large
-# uses k=r0*h^2 and N= T/k - 1 to define a new t-grid dependent on the x-grid
-
-# ------ Problems ------- 
-# 1) it takes a looong time to run with this relation for large M>400. N gets way too large, 
-# suggestion; have a linear increase in r0 for each iteration e.g r0 e [1,3]
-# 2) Backward Euler seems to go as O(h^2), is this because we use central difference along x-axis. 
-# Maybe we need to keep M constant and just refine the t-axis and plot error as a function of N? - tried this, did not work!
-    
-def plot_error_UMR(M):
-    disc_err_first = np.zeros(num)
-    disc_err_second = np.zeros(num)
-    cont_err_first = np.zeros(num)
-    cont_err_second = np.zeros(num)
-    for i in range(len(M)):
-        x = np.linspace(0,1,M[i]+2)
-        h = x[1] - x[0]
-        
-        #make a new t-grid based on r0 and M (or h if you like)
-        N = int(T/(r0*h**2)) - 1  
-        t = np.linspace(0,T,N+1)  
-        print(i, (t[1]-t[0])/h**2, M[i], N)
+def plot_UMR(M,N,type): #type = 't', 'h' or 'r'-refinement
+    T = 0.2
+    time_index = -1
+    refine_list = []
+    if type=='h':
+        refine_list = M
+        N = np.ones_like(M)*N
+    elif type=='t':
+        refine_list = N
+        M = np.ones_like(N)*M
+    else:
+        refine_list = M
+    disc_err_first = np.zeros(len(refine_list))
+    disc_err_second = np.zeros(len(refine_list))
+    cont_err_first = np.zeros(len(refine_list))
+    cont_err_second = np.zeros(len(refine_list))
+    for i in range(len(refine_list)):
+        x = np.linspace(0,1,M[i]+2) 
+        t = np.linspace(0,T,N[i]+1)
         
         U_BE = theta_method(x,t,1)
         U_CN = theta_method(x,t,1/2)
         u = anal_solution(x,t[time_index])
         
-        disc_err_first[i] = la.norm(U_BE[time_index,:]-u)/la.norm(u)
-        disc_err_second[i] = la.norm(U_CN[time_index,:]-u)/la.norm(u)
+        disc_err_first[i] = e_l(U_BE[time_index,:],u)
+        disc_err_second[i] = e_l(U_CN[time_index,:],u)
+
+        cont_err_first[i] = e_L(interp1d(x, U_BE[time_index,:], kind = 'cubic'), anal_solution, t[time_index])
+        cont_err_second[i] = e_L(interp1d(x, U_CN[time_index,:], kind = 'cubic'), anal_solution, t[time_index])
     
-        #continous error
-        #cont_err_first[i] = e_L(interp1d(x, U_BE[time_index,:], kind = 'cubic'), anal_solution, t[time_index])
-        #cont_err_second[i] = e_L(interp1d(x, U_CN[time_index,:], kind = 'cubic'), anal_solution, t[time_index])
+    MN = M*N    
+    Ndof = 1/(MN)
+    plt.plot(MN,cont_err_first, label=r"$e^r_{L_2}$ BE", color='green',marker='o')
+    plt.plot(MN,cont_err_second, label=r"$e^r_{L_2}$ CN",color='yellow',marker='o')
+    plt.plot(MN, disc_err_first, label=r"$e^r_{l}$ BE", color='red',marker='o',linestyle="--")
+    plt.plot(MN, disc_err_second, label=r"$e^r_{l}$ CN",color='blue',marker='o',linestyle="--")
     
-    h = 1/(M+2)
+    #these changes for different methods, change it manually!!
+    plt.plot(MN, (2e+3)*Ndof, label=r"O$(N_{dof}^{-1})$", linestyle='dashed', color='red')
+    plt.plot(MN, (1e+7)*Ndof**2, label=r"O$(N_{dof}^{-2})$",linestyle='dashed', color='blue')
+    
     plt.xscale('log')
     plt.yscale('log')
-    plt.plot(M, disc_err_first, label='l2_first', color='red')
-    plt.plot(M, disc_err_second, label='l2_second',color='blue')
-    #plt.plot(M,cont_err_first, label='L2_first')
-    #plt.plot(M,cont_err_second, label='L2_second')
-    plt.plot(M, 20*h, label='O(h)', linestyle='dotted', color='red')
-    plt.plot(M, 50*h**2, label='O(h^2)',linestyle='dotted', color='blue')
+    plt.xlabel('$M*N$')
+    plt.ylabel(r"Error $e^r_{(\cdot)}$")
     plt.legend()
     plt.grid()
     plt.show()
-    
-#plot_error_UMR(M)
 
+# h-refinement
+N = 1000
+M = np.array([8,16,32,64,128,256]) 
+#plot_UMR(M,N,'h')  # h-refinement, both methods are second order but BE flattens out because of big error in t
+
+# t-refinement
+M = 1000
+N = np.array([8,16,32,64,128,256])
+#plot_UMR(M,N,'t') #t-refinement, BE går som O(h), CN som O(h^2)
+
+# r-refinement, double N and M for each step
+M = np.array([8,16,32,64,128,256])
+N = np.array([8,16,32,64,128,256])
+#plot_UMR(M,N,'r')  #BE går som O(h^1/2), CN som O(h^1)
+
+# r-refinement with constant r, here r=1024=k/h^2=M^2/N
+M = np.array([64,128,256,512,1024,2048])
+N = np.array([4,16,64,256,1024,4096])
+#plot_UMR(M,N,'r')  #BE og CN går som O(h^2/3) (etterhvert i hvert fall)
 
 
 ## ----- AMR -----
@@ -246,7 +258,8 @@ def AMR(x0,t0,steps):
     M_list[-1] = len(X_M[-1])-2
     N_list[-1] = len(T_M[-1])-1
     return Usol_M, X_M, T_M, disc_error, M_list, N_list
-        
+
+T = 0.2     
 M = 9
 N = 15
 
@@ -254,7 +267,7 @@ x = np.linspace(0,1,M+2)
 t = np.linspace(0,T,N+1)
 
 steps = 7
-
+'''
 U , X, T, disc_error, Mlist, Nlist = AMR(x,t,steps)
 
 for i in range(steps):
@@ -266,4 +279,4 @@ plt.plot(Mlist,disc_error)
 plt.xscale('log')
 plt.yscale('log')
 plt.show()
-    
+'''
