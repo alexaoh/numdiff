@@ -178,7 +178,7 @@ N = np.array([4,16,64,256,1024,4096])
 ## ----- AMR -----
 from scipy.sparse import diags # Make sparse matrices with scipy.
 
-def first_order_AMR(x,t):
+def first_order_AMR(x,t): #not sure if this stencil is right w.r.t t-axis, just tried something.
 
     M = len(x)-2
     N = len(t)-1
@@ -203,80 +203,173 @@ def first_order_AMR(x,t):
         U[n+1,1:-1] = la.solve(lhs,b)
     return U
 
+def calc_cell_errors(U,u):
+    '''Calulculates an error for each cell by taking the avg of the error in the endpoints.'''
+    n = len(u) - 1 # Number of cells
+    cell_errors = np.zeros(n)
+    for i in range(n):
+        cell_errors[i] = abs(U[i] - u[i]) #(np.abs(u[i] - U[i]) + np.abs(u[i + 1] - U[i + 1]))
+    return cell_errors
 
-def AMR(x0,t0,steps):
+def AMR(x0,t0,steps,type):   #type = t,h-refinement, maybe r also
     disc_error = np.zeros(steps+1)
-    M_list = np.zeros(steps+1)
-    N_list = np.zeros(steps+1)
     Usol_M = [first_order_AMR(x0,t0)]
-    X_M = [x0]
-    T_M = [t0]
-    for k in range(steps):
-        M_list[k] = len(X_M[-1])-2
-        N_list[k] = len(T_M[-1])-1
-
-        x_1,t_1 = np.meshgrid(X_M[-1],T_M[-1])
-        u = anal_solution(x_1,t_1)
-        
-        
-        #Using the whole grid to refine x and t
-        disc_error[k] = la.norm(Usol_M[-1]-u)/la.norm(u)
-        
-        #not sure how to determine the error for x- and t-axis. Suggestion is below. 
-        #x-refinement
-        error_ave_x = np.average(np.abs(Usol_M[-1]-u),axis=0)
-        e_x = (error_ave_x[1:] + error_ave_x[:-1])/2
-        error_ave = np.average(error_ave_x)
-        
-        x = np.copy(X_M[-1])
-        n = 0
-        for i in range(len(e_x)):
-            if e_x[i] > error_ave:
-                x = np.insert(x,i+n+1,(X_M[-1][i]+X_M[-1][i+1])/2)        
-                n += 1
-        
-        #t-refinement
-        error_ave_t = np.average(np.abs(Usol_M[-1]-u),axis=1)
-        e_t = (error_ave_t[1:] + error_ave_t[:-1])/2
-        error_ave = np.average(error_ave_t)
-        
-        t = np.copy(T_M[-1])
-        n = 0
-        for i in range(len(e_t)):
-            if e_t[i] > error_ave:
-                t = np.insert(t,i+n+1,(T_M[-1][i]+T_M[-1][i+1])/2)        
-                n += 1
-                
-        X_M.append(x)
-        T_M.append(t)
-        Usol_M.append(first_order_AMR(x,t))
-
-    #add last elements
-    x_1,t_1 = np.meshgrid(X_M[-1],T_M[-1])
-    u = anal_solution(x_1,t_1)
-    disc_error[-1] = la.norm(Usol_M[-1]-u)/la.norm(u)
-    M_list[-1] = len(X_M[-1])-2
-    N_list[-1] = len(T_M[-1])-1
-    return Usol_M, X_M, T_M, disc_error, M_list, N_list
-
-T = 0.2     
-M = 9
-N = 15
-
-x = np.linspace(0,1,M+2)
-t = np.linspace(0,T,N+1)
-
-steps = 7
-'''
-U , X, T, disc_error, Mlist, Nlist = AMR(x,t,steps)
-
-for i in range(steps):
-    k = np.average(T[i][1:]-T[i][:-1])
-    h = np.average(X[i][1:]-X[i][:-1])
-    print(k/h**2)
+    refine_M = []
+    ref_list = np.zeros(steps+1)
     
-plt.plot(Mlist,disc_error)
+    if type == 'h':
+        refine_M = [x0]
+        for k in range(steps):
+            ref_list[k] = len(refine_M[-1])-2
+
+            #x_1,t_1 = np.meshgrid(refine_M[-1],t0)
+            u = anal_solution(refine_M[-1],t0[-1]) #look at the error in last iteration
+            disc_error[k] = e_l(Usol_M[-1][-1,:],u)  
+
+            x = list(np.copy(refine_M[-1]))
+            u = anal_solution(refine_M[-1],t0[1])
+            cell_errors = calc_cell_errors(Usol_M[-1][1,:],u) #look at the first iteration in t to minmialize error in t when we refine h.
+            tol = 1 * np.average(cell_errors)
+
+            j = 0 # Index for x in case we insert points
+
+            # For testing if first or second cell have been refined
+            firstCell = False
+            for i in range(len(cell_errors)):
+                if cell_errors[i] > tol:
+                    x.insert(j+1, x[j] + 0.5 * (x[j+1] - x[j]))
+                    j += 1
+
+                    # Tests to ensure that first and second cell have same length
+                    if i == 0:
+                        firstCell = True
+                        x.insert(j+1, x[j] + 0.5 * (x[j+1] - x[j]))
+                        j += 1
+                    if i == 2 and not firstCell:
+                        x.insert(1, x[0] + 0.5 * (x[1] - x[0]))
+                        j += 1
+                j += 1
+            x = np.array(x)
+            refine_M.append(x)
+            Usol_M.append(first_order_AMR(x,t0))
+            
+        u = anal_solution(refine_M[-1],t0[-1]) 
+        disc_error[-1] = e_l(Usol_M[-1][-1,:],u)
+        ref_list[-1] = len(refine_M[-1])-2
+        
+    if type == 't':
+        refine_M = [t0]
+        for k in range(steps):
+            ref_list[k] = len(refine_M[-1])-1
+
+            x_1,t_1 = np.meshgrid(x0,refine_M[-1])
+            u = anal_solution(x_1,t_1) 
+            disc_error[k] = e_l(Usol_M[-1][-1,:],u[-1,:])   #look at the error in last iteration
+
+            t = list(np.copy(refine_M[-1]))
+            u_ave_t = np.average(u,axis=1)
+            U_ave_t = np.average(Usol_M[-1],axis=1)
+            cell_errors = calc_cell_errors(U_ave_t,u_ave_t) #use avereage error along x for each t as a cell, this might be wrong!
+            tol = 1 * np.average(cell_errors)
+
+            j = 0 # Index for x in case we insert points
+
+            # For testing if first or second cell have been refined
+            #firstCell = False
+            for i in range(len(cell_errors)):
+                if cell_errors[i] > tol:
+                    t.insert(j+1, t[j] + 0.5 * (t[j+1] - t[j]))
+                    j += 1
+                    '''
+                    # Tests to ensure that first and second cell have same length
+                    if i == 0:
+                        firstCell = True
+                        x.insert(j+1, x[j] + 0.5 * (x[j+1] - x[j]))
+                        j += 1
+                    if i == 2 and not firstCell:
+                        x.insert(1, x[0] + 0.5 * (x[1] - x[0]))
+                        j += 1
+                    '''
+                j += 1
+            t = np.array(t)
+            refine_M.append(t)
+            Usol_M.append(first_order_AMR(x0,t))
+            
+        u = anal_solution(x0,t0[-1]) 
+        disc_error[-1] = e_l(Usol_M[-1][-1,:],u)
+        ref_list[-1] = len(refine_M[-1])-1
+    
+    return Usol_M, refine_M, disc_error, ref_list
+
+t_max = 0.2
+
+# h-refinement    
+N = 1000
+t = np.linspace(0,t_max,N+1)
+M0 = 9
+x0 = np.linspace(0,1,M0+2)
+
+steps = 13
+U , X, disc_error, M = AMR(x0,t,steps,'h')
+
+'''
+for i in range(steps):
+    plt.plot(X[i],U[i][-1,:])
+plt.plot(X[-1],anal_solution(X[-1],T),label='an',linestyle='dashed')
+plt.legend()
+plt.show()
+    
+'''
+plt.plot(M*N, disc_error)
+plt.xscale('log')
+plt.yscale('log')
+plt.show()
+
+'''
+# t-refinement
+M = 1000
+x = np.linspace(0,1,M+2)
+N0 = 9
+t0 = np.linspace(0,t_max,N0+1)
+
+steps = 8
+U , T, disc_error, N = AMR(x,t0,steps,'t')
+
+for i in range(3,steps):
+    plt.plot(x,U[i][-1,:])
+plt.plot(x,anal_solution(x,t_max),label='an',linestyle='dashed')
+plt.legend()
+plt.show()
+
+plt.plot(M*N, disc_error)
 plt.xscale('log')
 plt.yscale('log')
 plt.show()
 '''
+
+'''
+#not sure how to determine the error for x- and t-axis. Suggestion is below. 
+#x-refinement
+error_ave_x = np.average(np.abs(Usol_M[-1]-u),axis=0)
+e_x = (error_ave_x[1:] + error_ave_x[:-1])/2
+error_ave = np.average(error_ave_x)
+
+x = np.copy(X_M[-1])
+n = 0
+for i in range(len(e_x)):
+    if e_x[i] > error_ave:
+        x = np.insert(x,i+n+1,(X_M[-1][i]+X_M[-1][i+1])/2)        
+        n += 1
+
+#t-refinement
+error_ave_t = np.average(np.abs(Usol_M[-1]-u),axis=1)
+e_t = (error_ave_t[1:] + error_ave_t[:-1])/2
+error_ave = np.average(error_ave_t)
+
+t = np.copy(T_M[-1])
+n = 0
+for i in range(len(e_t)):
+    if e_t[i] > error_ave:
+        t = np.insert(t,i+n+1,(T_M[-1][i]+T_M[-1][i+1])/2)        
+        n += 1
+''' 
