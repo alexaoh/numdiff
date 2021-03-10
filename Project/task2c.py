@@ -22,7 +22,6 @@ def numSol(F, v0, tGrid, h, M, method):
     vList[0,:] = v0
     
     for i in range(N-1):
-        print(i)
         val = method(vList[i,:], k, F, tGrid[i], M, h)  
 
         vList[i+1,:] = val       
@@ -45,6 +44,8 @@ def plotTail(n, interval, sol, tGrid, xGrid):
     for i in range(1, n*interval, interval):
         plt.plot(xGrid, sol[-i, :], label = f"$t = {tGrid[-i]}$")
     
+    plt.xlabel('$x$')
+    plt.ylabel('$u(x,t)$')
     plt.legend()
     #plt.show()
 
@@ -53,7 +54,7 @@ M = 1000
 N = 1000
 xGrid = np.linspace(0, 1, M + 2)
 h = xGrid[1] - xGrid[0]
-tGrid = np.linspace(0,0.065, N)
+tGrid = np.linspace(0,0.060, N)
 
 v0 = np.array([initial(x) for x in xGrid[1:-1]])
 
@@ -66,8 +67,7 @@ sol = np.hstack((zeros, sol))
 sol = np.hstack((sol, zeros))
 
 
-print(sol)
-plotTail(2, 50, sol, tGrid, xGrid)
+plotTail(4, 50, sol, tGrid, xGrid)
 
 
 
