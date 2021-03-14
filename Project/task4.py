@@ -59,7 +59,7 @@ N = 10
 U = np.zeros((M+2, N+1))
 x = np.linspace(-1, 1, M+2)
 t = np.linspace(0, 1, N+1)
-euler_kdv(U, x, t, M, N) # Dimensjonsfeil!
+#euler_kdv(U, x, t, M, N) # Dimensjonsfeil!
 
 def crank_kdv(V, x, t, M, N, u0):
     """Discretization of KdV based on Crank-Nicolson, as derived in report.
@@ -77,3 +77,5 @@ def crank_kdv(V, x, t, M, N, u0):
     k = t[1]-t[0]
     r = k/h**2
     # Continue later. 
+
+plot_analytical_solution()
