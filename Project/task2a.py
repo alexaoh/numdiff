@@ -125,7 +125,7 @@ def calcError(M,N,filename,type):  #type = h,t,r - refinement. M,N are either li
     plt.plot(MN, disc_err_first, label = r"$e^r_l$ first",color='red',marker='o')
     plt.plot(MN, disc_err_second, label = r"$e^r_l$ second",color='blue',marker='o')
     plt.plot(MN, (5e+2)*Ndof, label="$O(N_{dof}^{-1})$", color='red', linestyle='dashed') 
-    plt.plot(MN, (1e+5)*Ndof**2, label="$O(N_{dof}^{-2)}$", color='blue', linestyle='dashed') 
+    plt.plot(MN, (1e+5)*Ndof**2, label="$O(N_{dof}^{-2})}$", color='blue', linestyle='dashed') 
     plt.yscale("log")
     plt.xscale("log")
     plt.xlabel('$M*N$')
@@ -155,7 +155,7 @@ N = np.array([4,8,16,32,64,128,256])  #does not have to be divisible by Nstar
 # r -refinement, here both M and N increases.
 M = np.array([8,10,20,25,40,50,100,125,200,250,500])
 N = np.array([8,10,20,25,40,50,100,125,200,250,500])
-#calcError(M,N,filename,'r')  #gives BE; Ndof^(-1/2) and CN; Ndof^(-1)
+calcError(M,N,filename,'r')  #gives BE; Ndof^(-1/2) and CN; Ndof^(-1)
 
 # r -refinement, keeping r fixed, r=40=M^2/N. Difficult to choose appropriate values
 M = np.array([20,25,40,50,100,125,200])
