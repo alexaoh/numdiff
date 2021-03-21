@@ -40,12 +40,9 @@ def num_sol_UMR(x,M,order): #order = 1 or 2
 
     # Solve linear system. 
     Usol = la.solve(Ah, f_vec)
-
-    # Add left Dirichlet condition to solution.
     Usol = np.insert(Usol, 0, alpha)
-
-    # Add right Dirichlet condtion to solution.
     Usol = np.append(Usol,beta)
+    
     return Usol
 
 ### Uniform mesh refinement UMR
@@ -96,9 +93,9 @@ def plot_errors_UMR(save = False):
 #plot_errors_UMR()
 
 ##--------- AMR--------------
-
-def coeff_stencil(i,h): # i=1 to i=M
-    #d_p, d_m, d_2m = d_i+1, d_i-1, d_i-2
+def coeff_stencil(i,h):
+    """Calculates the coefficients in the four-point stencil for a given index i and list h."""
+    #d_p, d_m, d_2m = d_i+1, d_i-1, d_i-2 (notation from the article)
     if i==1:    #use a 3-point stencil with equal spacing at first iteration, that means h[0]=h[1].
         b = c = 1/h[0]**2
         a = 0
@@ -113,14 +110,13 @@ def coeff_stencil(i,h): # i=1 to i=M
 
 
 def num_sol_AMR_second(x):
-    """Makes the matrix Ah, the discretization of U_xx, dependent on the grid x."""
+    """Second order discretization of U_xx with nonuniform grid, using the four-point stencil."""
     M = len(x)-2
     a, b, c = np.zeros(M),np.zeros(M),np.zeros(M)
     h = np.diff(x)
     
     for i in range(M):
-        a[i],b[i],c[i] = coeff_stencil(i+1,h) 
-    #care for the indices; a[0] = a_1 in the scheme
+        a[i],b[i],c[i] = coeff_stencil(i+1,h)  # a[0] = a_1 in the scheme
     
     data = [a[2:], b[1:], -(a+b+c), c[:-1]]
     diagonals = np.array([-2,-1, 0, 1])  
@@ -141,7 +137,8 @@ def num_sol_AMR_second(x):
     return Usol  
 
 
-def num_sol_AMR_first(x):  #uses the 3-point stencil with non-uniform grid
+def num_sol_AMR_first(x):
+    """First order discretization of U_xx with nonuniform grid, using the three-point stencil."""
     M = len(x)-2
     h = np.diff(x)
  
@@ -170,7 +167,7 @@ def calc_cell_errors(u,U):
     n = len(u) - 1 # Number of cells
     cell_errors = np.zeros(n)
     for i in range(n):
-        cell_errors[i] = abs(U[i] - u[i]) #(np.abs(u[i] - U[i]) + np.abs(u[i + 1] - U[i + 1]))
+        cell_errors[i] = abs(U[i] - u[i])
     return cell_errors
 
 
@@ -188,81 +185,6 @@ def AMR(x0, steps, num_solver):
          
         interpU = interp1d(X_M[-1], Usol_M[-1], kind = 'cubic')
         cont_error[k] = e_L(interpU, anal_solution, 0, 1)
-    
-        '''
-        #error_ave = np.average(np.abs(Usol_M[-1]-u))
-        #x = np.copy(X_M[-1])
-
-        # Backward refinement. Add refinement on last interval + ensure first and second interval are equally long!
-        n = 0
-        error_list = (np.abs(Usol_M[-1][:-1]-u[:-1]) + np.abs(Usol_M[-1][1:]-u[1:]))/2
-        for i in range(len(error_list)):
-            if error_list[i] > error_ave:
-                x = np.insert(x,i+n+1,(X_M[-1][i]+X_M[-1][i+1])/2)        
-                n += 1
-        
-        if (x[2]-x[1]) != (x[1]-x[0]):  #ensure first and second interval are equally long, this might not be necessary for first order
-            x = np.insert(x, 1, x[1]/2)
-            
-       
-        ## Here, tried something new; Compare x-axis to the x-axis two steps earlier, if an interval has not yet been refined -> refine it.
-        if k>=2:
-            h_now = x[1:] - x[:-1]
-            h_earlier = X_M[k-2][1:] - X_M[k-2][:-1]
-            if np.isclose(np.amax(h_now),np.amax(h_earlier)):
-                indices = np.where(np.isclose(h_now,np.amax(h_now)))[0]
-                z = np.copy(x)
-                
-                for j in range(len(indices)):
-                    i = indices[j]
-                    x = np.insert(x,i+1+j,(z[i]+z[i+1])/2)
-          
-    
-        #back + forward refinement
-        for i in range(1,len(Usol_M[-1])-1): #know the correct values at the boundary
-            if abs(Usol_M[-1][i]-u[i]) > error_ave:
-                x = np.insert(x,i+n+1,X_M[-1][i] + (X_M[-1][i+1]-X_M[-1][i])/4)     
-                x = np.insert(x,i+n,X_M[-1][i]-(X_M[-1][i]-X_M[-1][i-1])/4)
-                n += 2
-        if (x[2]-x[1]) != (x[1]-x[0]):  #insert a node to ensure first and second interval are equally long
-            x = np.insert(x, 1, x[1]/2)
-    
-        #----Jostein sin implementasjon
-        # Forward refinement
-        #Function for forward refinement, ensures first and second interval are equally long.
-        n = 0
-        i = 2
-        while (i < len(x)-1):
-            if abs(Usol_M[-1][i-n]-u[i-n]) > 0.5*error_ave:
-                x = np.insert(x, i+1, (x[i]+x[i+1])/2)
-                i += 2
-                n += 1
-            else:
-                i += 1
-        if abs(Usol_M[-1][1]-u[1]) > error_ave:
-            x = np.insert(x, 2, (x[1]+x[2])/2)
-            x = np.insert(x, 1, (x[0]+x[1])/2)
-        
-        
-        #Dette var også et forsøk på å diskretisere i siste endepunkt, men sannsynligvis ikke hensiktsmessig likevel. 
-        #    if abs(Usol_M[-1][-2]-u[-2]) > error_ave:
-        #     x = np.append(x, (X_M[-1][-3]+X_M[-1][-2])/2)
-
-
-        ##### Alex tried something else below, but the order flattens out and the error does not decrease (only flattens for second order however!!). 
-        
-        x = list(np.copy(X_M[-1]))
-        
-        for i in range(len(Usol_M[-1])):
-            if abs(Usol_M[-1][i]-u[i]) > error_ave:  #It works with 0.5*error_ave, perhaps becuase then it is almost like UMR.
-                small_list = [x[i], (x[i]+x[i+1])/2] 
-                x[i] = small_list
-            else:
-                x[i] = [x[i]]
-                
-        x = np.array(sum(x, []))
-
-        '''
 
         x = list(np.copy(X_M[-1]))
         cell_errors = calc_cell_errors(u, Usol_M[-1])
@@ -300,9 +222,8 @@ def AMR(x0, steps, num_solver):
     return Usol_M, X_M, disc_error, cont_error, M_list
 
 
-# testing the first or second order AMR solver
 def test_plot_AMR_solver(num_solver):
-    """Encapsulation for ease of use under development."""
+    """Show plots of numerical and analytical solution."""
     M = 9
     x = np.linspace(0, 1, M+2)
     steps = 4
@@ -316,7 +237,7 @@ def test_plot_AMR_solver(num_solver):
 #test_plot_AMR_solver(num_sol_AMR_second)
 
 
-#plotting errors
+#---plot errors---
 M = 9
 x0 = np.linspace(0, 1, M+2)
 steps = 16
@@ -326,6 +247,7 @@ U_2, X_2, disc_error_2, cont_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second)
 
 
 def plot_bar_error(X,U,start,stop):
+    """Plot error at each cell as bar-plot"""
     if stop > steps + 1:
         return 0
     
@@ -342,17 +264,9 @@ def plot_bar_error(X,U,start,stop):
     
         axs.flatten()[i].plot([j for j in range(len(cell_errors))], [tol for j in range(len(cell_errors))],label='ave',linestyle='dashed') #average AMR
         axs.flatten()[i].bar([j for j in range(len(cell_errors))], cell_errors, align='edge',label=str(i))
-        '''
-        h = X[i][1:] - X[i][:-1]
-        u = anal_solution(X[i])
-        ave = np.average(np.abs(U[i]-u))
-        x = (X[i][1:]+X[i][:-1])/2
-        error = (np.abs(U[i][1:]-u[1:]) + np.abs(U[i][:-1]-u[:-1]))/2
-        axs.flatten()[i].plot(X[i],np.ones_like(X[i])*ave,label='ave',linestyle='dashed')
-        axs.flatten()[i].bar(x, error, width=h,align='center',label=str(i))
-        '''
+        #Question; why plot with whole numbers as x-axis and not the x-grid we are refining for each step (X[i])?
     
-    #plt.legend()
+    plt.legend()
     fig.tight_layout()
     plt.show()
 
@@ -377,4 +291,4 @@ def plot_AMR_errors(save=False):
         plt.savefig("loglogtask1dAMR.pdf")
     plt.show()
 
-#plot_AMR_errors()
+plot_AMR_errors()
