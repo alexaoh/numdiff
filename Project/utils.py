@@ -101,3 +101,4 @@ def backward_subs(LU,P,c):
         x[k-1] = (c[k-1]-LU[P[k-1],k:] @ x[k:])/LU[P[k-1],k-1]
         
     return x
+    
