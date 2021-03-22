@@ -60,8 +60,8 @@ def num_solution_Mx_My(Mx, My):
     # Changed to a sparse solver in order to solve larger systems. If not enough; change to an iterative solver. 
     Usol = scipy.sparse.linalg.spsolve(A, F) 
     
-    # Next, want to plot the solution. 
-
+    # Next, want to unpack into grids, for plotting later. 
+    
     x = np.linspace(0, 1, Mx+2)
     y = np.linspace(0, 1, My+2) 
 
