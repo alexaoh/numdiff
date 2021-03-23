@@ -6,6 +6,11 @@ import numpy.linalg as la
 #import math
 import pickle # To save the reference solution.
 
+def plot_order(Ndof, error_start, order, label, color):
+    const = error_start/Ndof[0]**order
+    plt.plot(1/Ndof, const*Ndof**order, label=label, color=color, linestyle='dashed')
+
+
 def disc_l2_norm(V):
     """Discrete l2-norm of V."""
     sqr = (lambda x: x**2) 
@@ -44,7 +49,7 @@ def theta_method_given_Q(x, t, V0, Q, theta): #Can choose between BE or CN with 
         
     return sol
 
-def calcSol(x, t, order, plot = False):
+def calcSol(x, t, order, theta, plot = False):
     ''' 
     order = 1: Use bd and fd on bc + trapezoidal.
     order = 2: Use central differences with fict. nodes on bc + trapezoidal.
@@ -54,16 +59,15 @@ def calcSol(x, t, order, plot = False):
     data = np.array([np.full(M+1, 1), np.full(M+1, -2), np.full(M+1, 1)])
     diags = np.array([-1, 0, 1])
     Q = spdiags(data, diags, M+1, M+1).toarray()
-    theta = 0
     if order == 1:
         Q[0, 0] = Q[-1, -1] = -1
         Q[0, 1] = Q[-1, -2] =  0
         Q[0, 2] = Q[-1,-3] = 1
-        theta = 1
+
 
     elif order == 2:
         Q[0, 1] = Q[-1, -2] =  2
-        theta = 1/2
+    
     
     V0 = [initial(x) for x in x]
     sol = theta_method_given_Q(x, t, V0, Q, theta)   #is this the right form, using BE and CN for first and second order?
@@ -112,8 +116,8 @@ def calcError(M,N,filename,type):  #type = h,t,r - refinement. M,N are either li
     for i in range(len(M)):
         x = np.linspace(0,1,M[i]+1)
         t = np.linspace(0,T,N[i]+1)
-        sol_1 = calcSol(x, t, 1)
-        sol_2 = calcSol(x, t, 2)
+        sol_1 = calcSol(x, t, 2, 1)
+        sol_2 = calcSol(x, t, 2, 1/2)
         #uStar = np.array(piecewise(refSol[refTime,:], M, Mstar))
         uStar = refSol[refTime,0::(Mstar//M[i])]
        
@@ -122,10 +126,12 @@ def calcError(M,N,filename,type):  #type = h,t,r - refinement. M,N are either li
     
     MN = M*N
     Ndof = 1/MN
-    plt.plot(MN, disc_err_first, label = r"$e^r_l$ first",color='red',marker='o')
-    plt.plot(MN, disc_err_second, label = r"$e^r_l$ second",color='blue',marker='o')
-    plt.plot(MN, (5e+2)*Ndof, label="$O(N_{dof}^{-1})$", color='red', linestyle='dashed') 
-    plt.plot(MN, (1e+5)*Ndof**2, label="$O(N_{dof}^{-2})}$", color='blue', linestyle='dashed') 
+    plt.plot(MN, disc_err_first, label = "$e^r_l$ (BE)",color='red',marker='o')
+    plt.plot(MN, disc_err_second, label = "$e^r_l$ (CN)",color='blue',marker='o')
+    #plt.plot(MN, (3e-1)*Ndof**(1/2), label="$O(N_{dof}^{-1/2})$", color='red', linestyle='dashed') 
+
+    plot_order(Ndof, disc_err_first[0], 1/2, label = "$O(N_{dof}^{-1/2})$", color = 'red')
+    plot_order(Ndof, disc_err_second[0], 1, label = "$O(N_{dof}^{-1})}$", color='blue')
     plt.yscale("log")
     plt.xscale("log")
     plt.xlabel('$M*N$')
@@ -144,6 +150,7 @@ filename = 'refSol.pk'
 # h -refinement
 N = 1000
 M = np.array([8,10,20,25,40,50,100,125,200,250,500])
+
 #calcError(M,N,filename,'h')
 
 # t - refinement
