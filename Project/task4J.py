@@ -21,6 +21,7 @@ def initial_sine(x):
     return np.sin(np.pi*x)
 
 def anal_solution(x,t):
+    """Analytical solution to the problem."""
     return np.sin(np.pi*(x-t))
 
 def theta_method_kdv(x,t,theta,init):
