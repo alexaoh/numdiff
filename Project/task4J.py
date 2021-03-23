@@ -18,9 +18,11 @@ def e_l(U, u):
     return disc_l2_norm(u-U)/disc_l2_norm(u)
 
 def initial(x):
+    """Initial value."""
     return np.sin(np.pi*x)
 
 def anal_solution(x,t):
+    """Analytical solution to the problem."""
     return np.sin(np.pi*(x-t))
 
 def theta_method_kdv(x,t,theta):
@@ -41,21 +43,15 @@ def theta_method_kdv(x,t,theta):
     data = np.array([np.full(M, a), np.full(M, b), np.full(M, -b), np.full(M,-a)])
     diags = np.array([-3, -1, 1, 3])
     Q = spdiags(data, diags, M, M).toarray()
-    Q[0,-3] = Q[1,-2] = Q[2,-1] = a  #periodiske grensebetingelser
+    Q[0,-3] = Q[1,-2] = Q[2,-1] = a  # Periodic boundary conditions. 
     Q[0,-1] = b
     Q[-1,2] = Q[-2,1] = Q[-3,0] = -a
     Q[-1,0] = -b
 
     for n in range(N):
-        # Vet ikke hva BC-ene er?
-        #X[0, n+1] = g0(t[n+1])
-        #X[M+1, n+1] = g1(t[n+1])
-
-        # Vet heller ikke helt hvordan man skal starte iterasjonene for de første verdiene!?
-        #X[1:-1,n+1] = X[1:-1, n] + r/8*(X[3:, n] + 5*X[1:, n] - 16*X[1:-1, n] + 11*X[:-2, n] - X[:-4, n])
         lhs = np.identity(M) - theta*k*Q
         rhs = (np.identity(M) + (1-theta)*k*Q) @ U[n,:-1]
-        U[n+1,:-1] = la.solve(lhs,rhs) # Could try a sparse solver eventually also, if this is to slow or to memory-demanding. 
+        U[n+1,:-1] = la.solve(lhs,rhs) # Could try a sparse solver eventually also, if this is too slow or too memory-demanding. 
     U[:,0] = U[:,-1]
     return U
 
@@ -63,7 +59,7 @@ M = 30
 N = 5000
 x = np.linspace(-1, 1, M+1)
 t = np.linspace(0, 1, N+1)
-U = theta_method_kdv(x, t, 0.5) #funker med theta=1/2
+U = theta_method_kdv(x, t, 0.5) # Works with theta=1/2 --> Crank Nicolson. 
 
 u = anal_solution(x,t[-1])
 #print(U[-1])
