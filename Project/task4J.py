@@ -1,8 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.sparse import spdiags # Make sparse matrices with scipy.
+from scipy.sparse import diags # Make sparse matrices with scipy.
+from scipy.sparse.linalg import spsolve #Solve linear system with sparse matrix. 
+from scipy import sparse # Import sparse for more functions. 
 import numpy.linalg as la
 from mpl_toolkits.mplot3d import Axes3D
+
 
 def disc_l2_norm(V):
     """Discrete l2-norm of V."""
@@ -40,9 +43,10 @@ def theta_method_kdv(x,t,theta):
     c = 1 + np.pi**2
     a = 1/(8*h**3)
     b = c/(2*h) - 3/(8*h**3)
-    data = np.array([np.full(M, a), np.full(M, b), np.full(M, -b), np.full(M,-a)])
-    diags = np.array([-3, -1, 1, 3])
-    Q = spdiags(data, diags, M, M).toarray()
+    data = np.array([np.full(M, a)[:-3], np.full(M, b)[:-1], np.full(M, -b)[:-1], np.full(M,-a)[:-3]])
+    diag = np.array([-3, -1, 1, 3])
+    Q = diags(data, diag, format = "csc")
+    
     Q[0,-3] = Q[1,-2] = Q[2,-1] = a  # Periodic boundary conditions. 
     Q[0,-1] = b
     Q[-1,2] = Q[-2,1] = Q[-3,0] = -a
@@ -50,13 +54,16 @@ def theta_method_kdv(x,t,theta):
 
     for n in range(N):
         lhs = np.identity(M) - theta*k*Q
+        lhs = sparse.csc_matrix(lhs)
         rhs = (np.identity(M) + (1-theta)*k*Q) @ U[n,:-1]
-        U[n+1,:-1] = la.solve(lhs,rhs) # Could try a sparse solver eventually also, if this is too slow or too memory-demanding. 
+        U[n+1,:-1] = spsolve(lhs,rhs.T) # Trying a sparse solver, but the dimensions do not match anymore!
+        # I cannot seem to find out why the dimensions of the rhs change to the tranpose!? (when needing to transpose rhs, this solution is not faster than la.solve!)
+        #
     U[:,0] = U[:,-1]
     return U
 
-M = 30
-N = 5000
+M = 1000
+N = 1000
 x = np.linspace(-1, 1, M+1)
 t = np.linspace(0, 1, N+1)
 U = theta_method_kdv(x, t, 0.5) # Works with theta=1/2 --> Crank Nicolson. 
