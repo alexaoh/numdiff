@@ -26,9 +26,9 @@ def num_solution(x, M, alpha, sigma):
     data = np.array([np.full(M+1, 1), np.full(M+1, -2), np.full(M+1, 1)])
     diags = np.array([-1, 0, 1])
     Ah = spdiags(data, diags, M+1, M+1).toarray()*1/h**2
-    Ah[-1, -3] = -h/2
-    Ah[-1, -2] = 2*h
-    Ah[-1, -1] = -3*h/2
+    Ah[-1, -3] = h/2
+    Ah[-1, -2] = -2*h
+    Ah[-1, -1] = 3*h/2
 
     # Construct f.
     f_vec = np.full(M+1, f(x[1:]))
