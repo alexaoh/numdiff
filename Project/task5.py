@@ -30,35 +30,61 @@ def e_L(U, u, left, right):
 
     return numer/denom
 
-N_list = [2**i for i in range(3, 12)]
+def FEM_solver_equidistant(BC, f, x):
+    '''FEM solver which only works with equidistant grid x.'''
+    # Construction below assumes equidistant grid
+    N = len(x)
+    h = 1/(N-1)
+    
+    data = np.array([np.full(N - 2, -1), np.full(N - 2, 2), np.full(N -2, -1)])
+    diags = np.array([-1, 0, 1])
+    A = 1/h * spdiags(data, diags, N - 2, N - 2).toarray()
+    
+    # Construct rhs
+
+    rhs = np.zeros(N - 2)
+    for i in range(N - 2):
+        rhs[i] = h * f(x[i + 1])
+    
+    rhs[0] += 1/h * BC[0]
+    rhs[-1] += 1/h * BC[1]
+
+    u = la.solve(A, rhs)
+    u = np.hstack((np.array(BC[0]), u))
+    u = np.hstack((u, np.array(BC[1])))
+
+    return u
+
 
 
 
 def FEM_solver_Dirichlet(BC, f, x):
-
+    '''General FEM solver with Dirichlet BC.'''
     N = len(x)
-    h = 1/N
     # Construct A
-    data = np.array([np.full(N - 2, -1), np.full(N - 2, 2), np.full(N -2, -1)])
-    diags = np.array([-1, 0, 1])
-    A = 1/h * spdiags(data, diags, N - 2, N - 2).toarray()
-    # Construct rhs
-    rhs = np.zeros(N - 2)
-    for i in range(N - 2):
-        rhs[i] = h * f(x[i + 1])
-    rhs[0] += 1/h * BC[0]
-    rhs[-1] += 1/h * BC[1]
+    A = np.zeros((N,N))
+    for i in range(N - 1):
+        A[i:(i + 2), i:(i + 2)] +=  1/(x[i+1] - x[i]) * np.array([[1, -1], [-1, 1]])
 
+    rhs = np.zeros(N)
+    for i in range(N - 1):
+        rhs[i:(i+2)] += (x[i + 1] - x[i])/2 * np.array([f(x[i]), f(x[i + 1])])
+
+    #This could prabably be coded more efficiently
+    BC_vec = np.zeros(N)
+    BC_vec[0] = BC[0]
+    BC_vec[-1] = BC[1]
+
+    rhs = rhs - A @ BC_vec
+
+    # Implementing BC:
+    A = A[1:-1,1:-1]
+    rhs = rhs[1:-1]
 
     # Solve system
     u = la.solve(A, rhs)
     u = np.hstack((np.array(BC[0]), u))
     u = np.hstack((u, np.array(BC[1])))
-
-    #plt.plot(x,u)
-    #plt.plot(x,anal_sol(x))
-    #plt.show()
-
 
     return u
 
@@ -76,13 +102,13 @@ def UFEM():
 
     for N in N_list:
         x = np.linspace(0, 1, N)
-        u = FEM_solver_Dirichlet(BC, f, x)
-        u_interp = interp1d(x, u, kind = 'cubic')
+        U = FEM_solver_Dirichlet(BC, f, x)
+        U_interp = interp1d(x, U, kind = 'linear')
 
-        err_list.append(e_L(u_interp, anal_sol, x[0], x[-1]))
+        err_list.append(e_L(U_interp, anal_sol, x[0], x[-1]))
 
     plt.plot(N_list, err_list, marker = 'o')
-    plot_order(np.array(N_list), err_list[0], 1, "$O(h^{-2})$", color = "red")
+    plot_order(np.array(N_list), err_list[0], 2, "$O(h^{-2})$", color = "red")
 
     plt.xlabel("$N$")
     plt.ylabel("$e_{L_2}$")
@@ -114,7 +140,7 @@ def AFEM(N0, steps, alpha, type):
 
     for i in range(steps):
         U = FEM_solver_Dirichlet(BC, f, x)
-        U_interp = interp1d(x, U, kind = 'cubic')
+        U_interp = interp1d(x, U, kind = 'linear')
         cell_errors = calc_cell_errors(anal_sol, U_interp, x)
         err = e_L(U_interp, anal_sol, x[0], x[-1])
 
@@ -130,7 +156,7 @@ def AFEM(N0, steps, alpha, type):
         
         x = list(x)
         for j in range(len(cell_errors)):
-            if cell_errors[i] > alpha * err:
+            if cell_errors[j] > alpha * err:
                 x.insert(j+1, x[j] + 0.5 * (x[j+1] - x[j]))
         x = np.array(x)
     
@@ -147,8 +173,8 @@ def AFEM(N0, steps, alpha, type):
     plt.show()
 
 
-UFEM()
-#AFEM(20, 10, 1, 'avg')
+#UFEM()
+AFEM(20, 10, 0.7, 'avg')
 
 
 
