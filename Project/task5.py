@@ -150,19 +150,23 @@ def AFEM(N0, steps, alpha, type):
         if type == 'avg':
             err = 1/N_list[i] * err
         elif type == 'max':
-            err = np.max(cell_errors)
+            err = max(cell_errors)
+            print(cell_errors)
         else:
             raise Exception("Invalid type.")
         
         x = list(x)
+        k = 0 # index for x in case we insert points.
         for j in range(len(cell_errors)):
             if cell_errors[j] > alpha * err:
-                x.insert(j+1, x[j] + 0.5 * (x[j+1] - x[j]))
+                x.insert(k+1, x[k] + 0.5 * (x[k+1] - x[k]))
+                k += 1
+            k += 1
         x = np.array(x)
     
 
     plt.plot(N_list, err_list, marker = 'o')
-    plot_order(np.array(N_list), err_list[0], 1, "$O(h^{-2})$", color = "red")
+    plot_order(np.array(N_list), err_list[0], 2, "$O(h^{-2})$", color = "red")
 
     plt.xlabel("$N$")
     plt.ylabel("$e_{L_2}$")
@@ -174,7 +178,7 @@ def AFEM(N0, steps, alpha, type):
 
 
 #UFEM()
-AFEM(20, 10, 0.7, 'avg')
+AFEM(20, 5, 0.7, 'avg')
 
 
 
