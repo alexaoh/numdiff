@@ -94,24 +94,26 @@ def FEM_solver_Dirichlet(BC, f, x):
 
 # b)
 
-def UFEM():
+def UFEM(N_list, BC, f, anal_sol, x_interval):
     '''Conducts FEM with uniform refinement in 1D.'''
-    anal_sol = lambda x: x**2
-    f = lambda x: -2
-    BC = [0, 1]
-    N_list = [2**i for i in range(3, 12)]
     err_list = []
 
     for N in N_list:
-        x = np.linspace(0, 1, N)
+        x = np.linspace(x_interval[0], x_interval[1], N)
         U = FEM_solver_Dirichlet(BC, f, x)
         U_interp = interp1d(x, U, kind = 'linear')
-
+        '''
+        plt.plot(x, U_interp(x), label = "num", marker = 'o')
+        plt.plot(x, anal_sol(x), label = "anal", linestyle = "dotted")
+        plt.legend()
+        plt.show()
+        '''
         err_list.append(e_L2(U_interp, anal_sol, x[0], x[-1]))
 
     plt.plot(N_list, err_list, marker = 'o', label = "$||u - u_h||_{L_2}$")
     plot_order(np.array(N_list), err_list[0], 2, "$O(h^{-2})$", color = "red")
 
+    plt.title("UFEM")
     plt.xlabel("$N$")
     #plt.ylabel("$||u - u_h||_{L_2}$")
     plt.xscale("log")
@@ -131,14 +133,11 @@ def calc_cell_errors(U, u, x):
 
     return cell_errors
 
-def AFEM(N0, steps, alpha, type):
+def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval):
     '''Conducts FEM with adaptive refinement in 1D steps times.'''
-    anal_sol = lambda x: x**2
-    f = lambda x: -2
-    BC = [0, 1]
-    N_list = []
     err_list = []
-    x = np.linspace(0, 1, N0)
+    N_list = []
+    x = np.linspace(x_interval[0], x_interval[1], N0)
 
     for i in range(steps):
         U = FEM_solver_Dirichlet(BC, f, x)
@@ -150,7 +149,6 @@ def AFEM(N0, steps, alpha, type):
         plt.legend()
         plt.show()
         '''
-
         cell_errors = calc_cell_errors(U_interp, anal_sol, x)
         err = e_L2(U_interp, anal_sol, x[0], x[-1])
 
@@ -181,6 +179,7 @@ def AFEM(N0, steps, alpha, type):
     plt.plot(N_list, err_list, marker = 'o', label = "$||u - u_h||_{L_2}$")
     plot_order(np.array(N_list), err_list[0], 2, "$O(h^{-2})$", color = "red")
 
+    plt.title(str(steps) + '-step AFEM with ' + type + '-error and ' + r'$\alpha =$' + str(alpha))
     plt.xlabel("$N$")
     #plt.ylabel("$e_{L_2}$")
     plt.xscale("log")
@@ -189,14 +188,32 @@ def AFEM(N0, steps, alpha, type):
     plt.grid()
     plt.show()
 
+# b)
+anal_sol = lambda x: x**2
+f = lambda x: -2
+x_interval = [0,1]
+BC = [0, 1]
+N_list = [2**i for i in range(3, 12)]
+#UFEM(N_list, BC, f, anal_sol, x_interval)
 
-#UFEM()
+steps = 7
+alpha = 0.7
+N0 = 20
+AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
+
+# c)
+anal_sol = lambda x: np.exp(-100 * x**2)
+f = lambda x: - (40000*x**2 - 200) * np.exp(-100 * x**2)
+x_interval = [-1, 1]
+BC = [np.exp(-100), np.exp(-100)]
+N_list = [2**i for i in range(3, 12)]
+#UFEM(N_list, BC, f, anal_sol, x_interval)
+
 
 steps = 5
 alpha = 0.7
-N0 = 10
-AFEM(N0, steps, alpha, 'max')
-
+N0 = 20
+#AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
 
 
 
