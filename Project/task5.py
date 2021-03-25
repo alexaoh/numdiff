@@ -7,6 +7,7 @@ import numpy as np
 import numpy.linalg as la
 from scipy.interpolate import interp1d 
 from scipy.integrate import quad
+from scipy.integrate import quadrature
 import matplotlib.pyplot as plt
 
 def plot_order(Ndof, error_start, order, label, color):
@@ -18,17 +19,15 @@ def cont_L2_norm(v, left, right):
     integrand = lambda x: v(x)**2
     return np.sqrt(quad(integrand, left, right)[0])
 
-def e_L(U, u, left, right):
-    """Relative error e_L.
+def e_L2(U, u, left, right):
+    """L2 error on the interval [left, right].
     
     U: Approximate numerical solution.
     u: Function returning analytical solution. 
     """
     f = lambda x : u(x) - U(x)
-    numer = cont_L2_norm(f, left, right)
-    denom = cont_L2_norm(u, left, right)
-
-    return numer/denom
+    err = cont_L2_norm(f, left, right)
+    return err
 
 def FEM_solver_equidistant(BC, f, x):
     '''FEM solver which only works with equidistant grid x.'''
@@ -68,7 +67,10 @@ def FEM_solver_Dirichlet(BC, f, x):
 
     rhs = np.zeros(N)
     for i in range(N - 1):
-        rhs[i:(i+2)] += (x[i + 1] - x[i])/2 * np.array([f(x[i]), f(x[i + 1])])
+        # Functions to do Gaussian quadrature on:
+        v1 = lambda y: (x[i + 1] - y) * f(y)
+        v2 = lambda z: (z -x[i]) * f(z)
+        rhs[i:(i+2)] += 1/(x[i + 1] - x[i]) * np.array([quadrature(v1, x[i], x[i + 1])[0], quadrature(v2, x[i], x[i + 1])[0]])
 
     #This could prabably be coded more efficiently
     BC_vec = np.zeros(N)
@@ -105,13 +107,13 @@ def UFEM():
         U = FEM_solver_Dirichlet(BC, f, x)
         U_interp = interp1d(x, U, kind = 'linear')
 
-        err_list.append(e_L(U_interp, anal_sol, x[0], x[-1]))
+        err_list.append(e_L2(U_interp, anal_sol, x[0], x[-1]))
 
-    plt.plot(N_list, err_list, marker = 'o')
+    plt.plot(N_list, err_list, marker = 'o', label = "$||u - u_h||_{L_2}$")
     plot_order(np.array(N_list), err_list[0], 2, "$O(h^{-2})$", color = "red")
 
     plt.xlabel("$N$")
-    plt.ylabel("$e_{L_2}$")
+    #plt.ylabel("$||u - u_h||_{L_2}$")
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()
@@ -119,13 +121,13 @@ def UFEM():
     plt.show()
 
 # AFEM:
-def calc_cell_errors(u, U, x):
+def calc_cell_errors(U, u, x):
     '''Calulculates the error for each cell by taking the L_2 norm.'''
     n = len(x) - 1 # Number of cells
     cell_errors = np.zeros(n)
 
     for i in range(n):
-        cell_errors[i] = e_L(U, u, x[i], x[i +1])
+        cell_errors[i] = e_L2(U, u, x[i], x[i + 1])
 
     return cell_errors
 
@@ -141,8 +143,16 @@ def AFEM(N0, steps, alpha, type):
     for i in range(steps):
         U = FEM_solver_Dirichlet(BC, f, x)
         U_interp = interp1d(x, U, kind = 'linear')
-        cell_errors = calc_cell_errors(anal_sol, U_interp, x)
-        err = e_L(U_interp, anal_sol, x[0], x[-1])
+
+        '''
+        plt.plot(x, U_interp(x), label = "num", marker = 'o')
+        plt.plot(x, anal_sol(x), label = "anal", linestyle = "dotted")
+        plt.legend()
+        plt.show()
+        '''
+
+        cell_errors = calc_cell_errors(U_interp, anal_sol, x)
+        err = e_L2(U_interp, anal_sol, x[0], x[-1])
 
         N_list.append(len(x))
         err_list.append(err)
@@ -151,7 +161,6 @@ def AFEM(N0, steps, alpha, type):
             err = 1/N_list[i] * err
         elif type == 'max':
             err = max(cell_errors)
-            print(cell_errors)
         else:
             raise Exception("Invalid type.")
         
@@ -163,13 +172,17 @@ def AFEM(N0, steps, alpha, type):
                 k += 1
             k += 1
         x = np.array(x)
-    
 
-    plt.plot(N_list, err_list, marker = 'o')
+        '''
+        plt.bar([i for i in range(len(cell_errors))], cell_errors)
+        plt.scatter(x, np.zeros(len(x)), s = 1)
+        plt.show()
+        '''
+    plt.plot(N_list, err_list, marker = 'o', label = "$||u - u_h||_{L_2}$")
     plot_order(np.array(N_list), err_list[0], 2, "$O(h^{-2})$", color = "red")
 
     plt.xlabel("$N$")
-    plt.ylabel("$e_{L_2}$")
+    #plt.ylabel("$e_{L_2}$")
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()
@@ -178,7 +191,11 @@ def AFEM(N0, steps, alpha, type):
 
 
 #UFEM()
-AFEM(20, 5, 0.7, 'avg')
+
+steps = 5
+alpha = 0.7
+N0 = 10
+AFEM(N0, steps, alpha, 'max')
 
 
 
