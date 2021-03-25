@@ -188,7 +188,8 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval):
     plt.grid()
     plt.show()
 
-# b)
+## b)
+# UFEM
 anal_sol = lambda x: x**2
 f = lambda x: -2
 x_interval = [0,1]
@@ -196,12 +197,19 @@ BC = [0, 1]
 N_list = [2**i for i in range(3, 12)]
 #UFEM(N_list, BC, f, anal_sol, x_interval)
 
+# Average AFEM
 steps = 7
-alpha = 0.7
+alpha = 1
 N0 = 20
-AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
+#AFEM(N0, steps, alpha, 'avg', f, anal_sol, x_interval)
 
-# c)
+# Maximum AFEM
+alpha = 0.7
+#AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
+
+
+## c)
+#UFEM
 anal_sol = lambda x: np.exp(-100 * x**2)
 f = lambda x: - (40000*x**2 - 200) * np.exp(-100 * x**2)
 x_interval = [-1, 1]
@@ -209,11 +217,56 @@ BC = [np.exp(-100), np.exp(-100)]
 N_list = [2**i for i in range(3, 12)]
 #UFEM(N_list, BC, f, anal_sol, x_interval)
 
-
-steps = 5
-alpha = 0.7
+# Average AFEM
+steps = 7
+alpha = 1
 N0 = 20
+#AFEM(N0, steps, alpha, 'avg', f, anal_sol, x_interval)
+
+#Maximum AFEM
+alpha = 0.7
 #AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
+
+## d)
+#UFEM
+anal_sol = lambda x: np.exp(-1000 * x**2)
+f = lambda x: - (4000000 * x**2 - 2000) * np.exp(-1000 * x**2)
+x_interval = [-1, 1]
+BC = [np.exp(-1000), np.exp(-1000)]
+N_list = [2**i for i in range(3, 12)]
+#UFEM(N_list, BC, f, anal_sol, x_interval)
+
+# Average AFEM
+steps = 7
+alpha = 1
+N0 = 20
+#AFEM(N0, steps, alpha, 'avg', f, anal_sol, x_interval)
+# Maximum AFEM
+alpha = 0.7
+#AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
+
+
+## e)
+# UFEM
+anal_sol = lambda x: x**(2/3)
+f = lambda x: 2/9 * x**(-4/3)
+x_interval = [0, 1]
+BC = [0, 1]
+N_list = [2**i for i in range(3, 12)]
+#UFEM(N_list, BC, f, anal_sol, x_interval)
+
+# Average AFEM
+steps = 7
+alpha = 1
+N0 = 20
+#AFEM(N0, steps, alpha, 'avg', f, anal_sol, x_interval)
+
+# Maximum AFEM
+alpha = 0.7
+AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
+
+
+
 
 
 
