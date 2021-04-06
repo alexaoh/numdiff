@@ -1,4 +1,4 @@
-"""Implementation of RK2, RK3 and RK4. Task 2c) in part 2 of semester project."""
+"""Implementation of RK2, RK3 and RK4. Task 2d) in part 2 of semester project."""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,6 +10,11 @@ def analytical_solution(x,t):
     b = (x-c*t)*(1-c**2)**(-1/2) #Valgte plus-tegnet som løsning, det er vel greit?
     return 4*np.arctan(np.exp(b))
 
+f_1 = lambda a, t : analytical_solution(a,t)
+f_2 = lambda b, t : analytical_solution(b,t)
+u_0 = lambda x : analytical_solution(x,0)
+u_1 = lambda x : -4*c*np.exp(x*(1-c**2)**(-1/2))/((1-c**2)**(1/2)*(1 + np.exp(2*x*(1-c**2)**(-1/2))))
+
 def RK2_step(h, k, t_i, y, f):
     """One step in RK2-method."""
     s1 = f(h, t_i, y)
@@ -20,7 +25,7 @@ def RK3_step(h, k, t_i,y, f):
     """One step in RK3-method."""
     s1 = f(h, t_i,y)
     s2 = f(h, t_i+k/2, y + (k/2)*s1)
-    s3 = f(h, t_i+k,y - s1 + 2*s2)
+    s3 = f(h, t_i+k, y - s1 + 2*s2)
     return y + (k/6)*(s1 + 4*s2 + s3)
 
 def RK4_step(h, k, t_i, y, f):
@@ -42,7 +47,6 @@ def runge_kutta(x, t, f, method = RK4_step):
     """
     assert(callable(method))
     assert(callable(f))
-    initial_derivative = lambda x : -4*c*np.exp(x*(1-c**2)**(-1/2))/((1-c**2)**(1/2)*(1 + np.exp(2*x*(1-c**2)**(-1/2))))
     
     N = len(t)-1
     k = t[1] - t[0]
@@ -50,14 +54,14 @@ def runge_kutta(x, t, f, method = RK4_step):
     Y = np.zeros((N+1,2,len(x)))
     
     #Initial conditions
-    Y[0, 0, :] = analytical_solution(x,t[0]) #=u0(x)
-    Y[0, 1, :] = initial_derivative(x)  #=u1(x)
+    Y[0, 0, :] = u_0(x)
+    Y[0, 1, :] = u_1(x)
     for i in range(N):
         Y[i+1,:,1:-1] = method(h, k, t[i], Y[i,:,1:-1], f) #Løser kun for de nodene innenfor kanten, setter inn B.C etterpå.
     
     #Insert B.C
-    Y[:, 0, 0] = analytical_solution(x[0],t)  #=f1(t)
-    Y[:, 0, -1] = analytical_solution(x[-1],t) #=f2(t)
+    Y[:, 0, 0] = f_1(x[0],t)
+    Y[:, 0, -1] = f_2(x[-1],t)
     return Y[:,0,:]
 
 def F(h,t_i,y):
@@ -67,9 +71,9 @@ def F(h,t_i,y):
     res = np.zeros(np.shape(y))
     
     res[0,:] = y[1,:]
-    res[1,0] = (1/h**2)*(analytical_solution(x[0],t_i)-2*y[0,0]+y[0,1]) - np.sin(y[0,0])
+    res[1,0] = (1/h**2)*(f_1(x[0],t_i)-2*y[0,0]+y[0,1]) - np.sin(y[0,0])
     res[1,1:-1] = (1/h**2)*(y[0,:-2]-2*y[0,1:-1]+y[0,2:]) - np.sin(y[0,1:-1])
-    res[1,-1] = (1/h**2)*(y[0,-2]-2*y[0,-1]+analytical_solution(x[-1],t_i)) - np.sin(y[0,-1])
+    res[1,-1] = (1/h**2)*(y[0,-2]-2*y[0,-1]+f_2(x[-1],t_i)) - np.sin(y[0,-1])
     
     return res
 
@@ -78,7 +82,7 @@ def F(h,t_i,y):
 M = 200
 N = 1000
 T = 5
-x = np.linspace(-2,2,M+2)
+x = np.linspace(-2,2,M+1)
 t = np.linspace(0,T,N+1)
 
 U = runge_kutta(x, t, F, RK4_step)
