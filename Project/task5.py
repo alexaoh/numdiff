@@ -263,7 +263,7 @@ N0 = 20
 
 # Maximum AFEM
 alpha = 0.7
-AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
+#AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
 
 
 
