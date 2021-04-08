@@ -3,6 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import numpy.linalg as la
+from scipy.sparse import spdiags
 
 c = 0.5  #Kan vi bestemme c selv?
 def analytical_solution(x,t):
@@ -15,28 +16,28 @@ f_2 = lambda b, t : analytical_solution(b,t)
 u_0 = lambda x : analytical_solution(x,0)
 u_1 = lambda x : -4*c*np.exp(x*(1-c**2)**(-1/2))/((1-c**2)**(1/2)*(1 + np.exp(2*x*(1-c**2)**(-1/2))))
 
-def RK2_step(h, k, t_i, y, f):
+def RK2_step(k, t_i, y, f):
     """One step in RK2-method."""
-    s1 = f(h, t_i, y)
-    s2 = f(h,t_i +k, y + k*s1)
+    s1 = f(t_i, y)
+    s2 = f(t_i +k, y + k*s1)
     return y + (k/2)*(s1+s2)
 
-def RK3_step(h, k, t_i,y, f):
+def RK3_step(k, t_i, y, f):
     """One step in RK3-method."""
-    s1 = f(h, t_i,y)
-    s2 = f(h, t_i+k/2, y + (k/2)*s1)
-    s3 = f(h, t_i+k, y - s1 + 2*s2)
+    s1 = f(t_i,y)
+    s2 = f(t_i+k/2, y + (k/2)*s1)
+    s3 = f(t_i+k, y - s1 + 2*s2)
     return y + (k/6)*(s1 + 4*s2 + s3)
 
-def RK4_step(h, k, t_i, y, f):
+def RK4_step(k, t_i, y, f):
     """One step in RK4-method.""" 
-    s1 = f(h,t_i, y)
-    s2 = f(h, t_i+k/2, y + (k/2)*s1)  
-    s3 = f(h, t_i+k/2, y + (k/2)*s2) 
-    s4 = f(h, t_i+k, y + k*s3)
+    s1 = f(t_i, y)
+    s2 = f(t_i + k/2, y + (k/2)*s1)  
+    s3 = f(t_i + k/2, y + (k/2)*s2) 
+    s4 = f(t_i + k, y + k*s3)
     return y + (k/6)*(s1 + 2*s2 + 2*s3 + s4)
 
-def runge_kutta(x, t, f, method = RK4_step):
+def runge_kutta(x, t, method = RK4_step):
     """Runge Kutta solution, solved with 'method' step. Standard step function is RK4.
     
     Input parameters:
@@ -46,46 +47,49 @@ def runge_kutta(x, t, f, method = RK4_step):
     method: callable step function for Runge Kutta loop. 
     """
     assert(callable(method))
-    assert(callable(f))
+    #assert(callable(f))
     
     N = len(t)-1
+    M = len(x)-2
     k = t[1] - t[0]
     h = x[1] - x[0]
-    Y = np.zeros((N+1,2,len(x)))
     
+    data = np.array([np.full(M, 1), np.full(M, -2), np.full(M, 1)])
+    diags = np.array([-1, 0, 1])
+    Ah = spdiags(data, diags, M, M).toarray()*1/h**2
+    
+    v_left = lambda t : f_1(x[0],t)/h**2
+    v_right = lambda t : f_2(x[-1],t)/h**2
+    g = lambda t, v : np.concatenate(([-np.sin(v[0])+v_left(t)],-np.sin(v[1:-1]),[-np.sin(v[-1])+v_right(t)]))
+    F = lambda t, y : np.array([y[1], Ah @ y[0] + g(t,y[0])])
+    
+    Y = np.zeros((N+1,2,M))
     #Initial conditions
-    Y[0, 0, :] = u_0(x)
-    Y[0, 1, :] = u_1(x)
+    Y[0, 0, :] = u_0(x[1:-1])
+    Y[0, 1, :] = u_1(x[1:-1])
+    
+    assert(f_1(x[0],0)==u_0(x[0]))
+    assert(f_2(x[-1],0)==u_0(x[-1]))
+    
     for i in range(N):
-        Y[i+1,:,1:-1] = method(h, k, t[i], Y[i,:,1:-1], f) #Løser kun for de nodene innenfor kanten, setter inn B.C etterpå.
+        Y[i+1,:,:] = method(k, t[i], Y[i,:,:], F)
+    
+    Usol = Y[:,0,:]
     
     #Insert B.C
-    Y[:, 0, 0] = f_1(x[0],t)
-    Y[:, 0, -1] = f_2(x[-1],t)
-    return Y[:,0,:]
+    Usol = np.insert(Usol,0,f_1(x[0],t),axis=1)
+    Usol = np.column_stack((Usol,f_2(x[-1],t)))
 
-def F(h,t_i,y):
-    """Expression for derivatives of y-vector = [v_m,w_m] for 1 <= m <= M+1.
-    Using analytic function at boundary as boundary conditions.
-    """
-    res = np.zeros(np.shape(y))
-    
-    res[0,:] = y[1,:]
-    res[1,0] = (1/h**2)*(f_1(x[0],t_i)-2*y[0,0]+y[0,1]) - np.sin(y[0,0])
-    res[1,1:-1] = (1/h**2)*(y[0,:-2]-2*y[0,1:-1]+y[0,2:]) - np.sin(y[0,1:-1])
-    res[1,-1] = (1/h**2)*(y[0,-2]-2*y[0,-1]+f_2(x[-1],t_i)) - np.sin(y[0,-1])
-    
-    return res
+    return Usol
 
-#Løsningen divergerer når M>N. Noe som er feil her.
-#Funker derfor ikke med t-refinement
-M = 200
-N = 1000
+#Løsningen divergerer når N<<M. Noe som er feil?
+M = 1000
+N = 200
 T = 5
-x = np.linspace(-2,2,M+1)
+x = np.linspace(-2,2,M+2)
 t = np.linspace(0,T,N+1)
 
-U = runge_kutta(x, t, F, RK4_step)
+U = runge_kutta(x, t, RK2_step)
 
 plt.plot(x,U[-1,:])
 plt.plot(x,analytical_solution(x,t[-1]))
