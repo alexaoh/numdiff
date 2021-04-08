@@ -91,22 +91,36 @@ t = np.linspace(0,T,N+1)
 
 U = runge_kutta(x, t, RK2_step)
 
-plt.plot(x,U[-1,:])
-plt.plot(x,analytical_solution(x,t[-1]))
+plt.plot(x,U[-1,:], label = "Numerical")
+plt.plot(x,analytical_solution(x,t[-1]), label = "analytical", linestyle = "dashed")
+plt.legend()
 plt.show()
 
-'''
-M = np.array([8,16,32,64,128])
-err = np.zeros(len(M))
-for i,m in enumerate(M):
-    x = np.linspace(-2,2,m+2)
-    U = runge_kutta(x,t,F,RK2_step)
-    u = analytical_solution(x,t[-1])
-    err[i] = la.norm(U[-1,:]-u)/la.norm(u)
+def plot_order(Ndof, error_start, order, label, color):
+    """Plots Ndof^{-order} from a starting point."""
+    const = (error_start)**(1/order)*Ndof[0]
+    plt.plot(Ndof, (const*1/Ndof)**order, label=label, color=color, linestyle='dashed')
 
-plt.plot(M, err)
-plt.plot(M,(1/M)**(2),linestyle='--')
-plt.xscale('log')
-plt.yscale('log')
-plt.show()
-'''
+def h_refinement(method):
+    """Preforms t-refinement and plots the result."""
+    M = np.array([8,16,32,64,128])
+    err = np.zeros(len(M))
+    T = 5
+    N = 1000
+    t = np.linspace(0, T, N + 1)
+    for i,m in enumerate(M):
+        x = np.linspace(-2,2,m+2) 
+        U = runge_kutta(x,t,method)
+        u = analytical_solution(x,t[-1])
+        err[i] = la.norm(U[-1,:]-u)/la.norm(u)
+
+    plt.plot(M, err, marker = 'o', label = "$||u - U||_{L_2}$")
+    plot_order(M, err[0], 2, "$O(M^{-2})$", "red")
+    plt.xlabel("$M$")
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.legend()
+    plt.show()
+
+h_refinement(RK4_step)
+
