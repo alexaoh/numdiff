@@ -210,8 +210,8 @@ alpha = 0.7
 
 ## c)
 #UFEM
-anal_sol = lambda x: - np.exp(-100 * x**2)
-f = lambda x:  (40000*x**2 - 200) * np.exp(-100 * x**2)
+anal_sol = lambda x: np.exp(-100 * x**2)
+f = lambda x: - (40000*x**2 - 200) * np.exp(-100 * x**2)
 x_interval = [-1, 1]
 BC = [np.exp(-100), np.exp(-100)]
 N_list = [2**i for i in range(3, 12)]
@@ -229,8 +229,8 @@ alpha = 0.7
 
 ## d)
 #UFEM
-anal_sol = lambda x: - np.exp(-1000 * x**2)
-f = lambda x:  (4000000 * x**2 - 2000) * np.exp(-1000 * x**2)
+anal_sol = lambda x: np.exp(-1000 * x**2)
+f = lambda x: - (4000000 * x**2 - 2000) * np.exp(-1000 * x**2)
 x_interval = [-1, 1]
 BC = [np.exp(-1000), np.exp(-1000)]
 N_list = [2**i for i in range(3, 12)]
@@ -249,11 +249,11 @@ alpha = 0.7
 ## e)
 # UFEM
 anal_sol = lambda x: x**(2/3)
-f = lambda x: 2/9 * x**(-4/3)
+f = lambda x: - 2/9 * x**(-4/3)
 x_interval = [0, 1]
 BC = [0, 1]
 N_list = [2**i for i in range(3, 12)]
-#UFEM(N_list, BC, f, anal_sol, x_interval)
+UFEM(N_list, BC, f, anal_sol, x_interval)
 
 # Average AFEM
 steps = 7
