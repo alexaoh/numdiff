@@ -1,21 +1,19 @@
-from scipy.sparse import spdiags, diags # Make sparse matrices with scipy.
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
 from utilities import *
 from scipy.interpolate import interp1d 
 import scipy.sparse.linalg as sla
+import scipy.sparse as sp
 
 epsilon = 0.01
 def f(x):
     """Right hand side of 1D Poisson equation."""
     return epsilon**(-2)*np.exp(-(1/epsilon)*(x-0.5)**2)*(4*x**2 - 4*x + 1 - 2*epsilon)
 
-
 def anal_solution(x):
     """Manufactured solution of the Poisson equation with Dirichlet BC."""
     return np.exp(-(1/epsilon)*(x-0.5)**2)
-
 
 def num_sol_UMR(x,M,order): # order = 1 or 2.
     """First order numerical solution of the Possion equation with Dirichlet B.C.,
@@ -31,9 +29,9 @@ def num_sol_UMR(x,M,order): # order = 1 or 2.
     beta = anal_solution(x[-1])
     
     # Construct Ah. 
-    data = np.array([np.full(M, 1), np.full(M, -2), np.full(M, 1)])
+    data = np.array([np.full(M, 1), np.full(M, -2), np.full(M, 1)]*1/h**2)
     diags = np.array([-1, 0, 1])
-    Ah = spdiags(data, diags, M, M).toarray()*1/h**2
+    Ah = sp.diags(data, diags, shape = [M, M], format = "csc")
     
     if order == 1:
         f_vec = np.full(M,f(x[:-2]))
@@ -43,7 +41,7 @@ def num_sol_UMR(x,M,order): # order = 1 or 2.
     f_vec[-1] = f_vec[-1] - beta/h**2
 
     # Solve linear system. 
-    Usol = la.solve(Ah, f_vec) # Change this to a sparse solver!
+    Usol = sla.spsolve(Ah, f_vec) 
     Usol = np.insert(Usol, 0, alpha)
     Usol = np.append(Usol,beta)
     
@@ -112,7 +110,6 @@ def coeff_stencil(i,h):
         c = 2 * (d_2m + d_m) / (d_p*(d_m + d_p)*(d_2m + d_p))
     return a, b, c
 
-
 def num_sol_AMR_second(x):
     """Second order discretization of U_xx with nonuniform grid, using the four-point stencil."""
     M = len(x)-2
@@ -120,11 +117,11 @@ def num_sol_AMR_second(x):
     h = np.diff(x)
     
     for i in range(M):
-        a[i],b[i],c[i] = coeff_stencil(i+1,h)  # a[0] = a_1 in the scheme
+        a[i],b[i],c[i] = coeff_stencil(i+1,h)  # a[0] = a_1 in the scheme.
     
     data = [a[2:], b[1:], -(a+b+c), c[:-1]]
     diagonals = np.array([-2,-1, 0, 1])  
-    Ah = diags(data, diagonals).toarray()  # Note; Here using sparse.diags, not sparse.spdiags!
+    Ah = sp.diags(data, diagonals, format = "csc")
     
     alpha = anal_solution(0)
     beta = anal_solution(1)
@@ -134,12 +131,11 @@ def num_sol_AMR_second(x):
     f_vec[1] = f_vec[1] - a[1]*alpha
     f_vec[-1] = f_vec[-1] - c[-1]*beta
 
-    Usol = la.solve(Ah, f_vec) # Change this to a sparse solver later!
+    Usol = sla.spsolve(Ah, f_vec) 
     Usol = np.insert(Usol, 0, alpha)
     Usol = np.append(Usol,beta)
     
     return Usol  
-
 
 def num_sol_AMR_first(x):
     """First order discretization of U_xx with nonuniform grid, using the three-point stencil."""
@@ -151,7 +147,7 @@ def num_sol_AMR_first(x):
     
     data = [b[1:], -(b+c), c[:-1]]   
     diagonals = np.array([-1, 0, 1])
-    Ah = diags(data, diagonals).toarray()
+    Ah = sp.diags(data, diagonals, format = "csc")
         
     alpha = anal_solution(x[0])
     beta = anal_solution(x[-1])
@@ -160,7 +156,7 @@ def num_sol_AMR_first(x):
     f_vec[0] = f_vec[0] - alpha*b[0]
     f_vec[-1] = f_vec[-1] - beta*c[-1]
 
-    Usol = la.solve(Ah,f_vec) # Change this to a sparse solver later!
+    Usol = sla.spsolve(Ah,f_vec)
     Usol = np.insert(Usol, 0, alpha)
     Usol = np.append(Usol, beta)
     
@@ -173,7 +169,6 @@ def calc_cell_errors(u,U):
     for i in range(n):
         cell_errors[i] = abs(U[i] - u[i])
     return cell_errors
-
 
 def AMR(x0, steps, num_solver): 
     """Mesh refinement 'steps' amount of times. Find the error, x-grid and numerical solution for each step."""
@@ -225,7 +220,6 @@ def AMR(x0, steps, num_solver):
     M_list[-1] = len(X_M[-1])-2
     return Usol_M, X_M, disc_error, cont_error, M_list
 
-
 def test_plot_AMR_solver(num_solver):
     """Show plots of numerical and analytical solution."""
     M = 9
@@ -238,8 +232,8 @@ def test_plot_AMR_solver(num_solver):
     plt.plot(X[-1],anal_solution(X[-1]),label="An",linestyle='dotted')
     plt.legend()
     plt.show()
-#test_plot_AMR_solver(num_sol_AMR_second)
 
+#test_plot_AMR_solver(num_sol_AMR_second)
 
 #---plot errors---
 M = 9
@@ -248,7 +242,6 @@ steps = 16
 
 U_1, X_1, disc_error_1, cont_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
 U_2, X_2, disc_error_2, cont_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second)
-
 
 def plot_bar_error(X,U,start,stop):
     """Plot error at each cell as bar-plot."""
@@ -275,7 +268,6 @@ def plot_bar_error(X,U,start,stop):
     plt.show()
 
 #plot_bar_error(X_2,U_2,0,steps)
-
 
 def plot_AMR_errors(save=False):
     """Convergence plot from AMR."""
