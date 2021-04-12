@@ -4,6 +4,7 @@ import numpy.linalg as la
 import matplotlib.pyplot as plt
 from utilities import *
 from scipy.interpolate import interp1d 
+import scipy.sparse.linalg as sla
 
 epsilon = 0.01
 def f(x):
@@ -76,7 +77,7 @@ for i, m in enumerate(M_list):
 
 def plot_errors_UMR(save = False):
     """Encapsulation, to avoid commenting while development."""
-    plt.plot(M_list,e_2_cont,label=r"$e^r_{L_2}$ second", color = "yellow",marker='o')
+    plt.plot(M_list,e_2_cont,label=r"$e^r_{L_2}$ second", color = "orange",marker='o')
     plt.plot(M_list,e_1_cont,label=r"$e^r_{L_2}$ first", color = "green",marker='o')
     plt.plot(M_list,e_1_disc,label=r"$e^r_{l}$ first", color = "red",marker='o',linestyle = "--")
     plt.plot(M_list,e_2_disc,label=r"$e^r_l$ second", color = "blue",marker='o',linestyle = "--")
@@ -99,7 +100,7 @@ def plot_errors_UMR(save = False):
 def coeff_stencil(i,h):
     """Calculate the coefficients in the four-point stencil for a given index i and list h."""
     #d_p, d_m, d_2m = d_i+1, d_i-1, d_i-2 (notation from the article)
-    if i==1:    #use a 3-point stencil with equal spacing at first iteration, that means h[0]=h[1].
+    if i==1:    # Use a 3-point stencil with equal spacing at first iteration, that means h[0]=h[1].
         b = c = 1/h[0]**2
         a = 0
     else:
@@ -123,7 +124,7 @@ def num_sol_AMR_second(x):
     
     data = [a[2:], b[1:], -(a+b+c), c[:-1]]
     diagonals = np.array([-2,-1, 0, 1])  
-    Ah = diags(data, diagonals).toarray()  #Note; Here using sparse.diags, not sparse.spdiags!
+    Ah = diags(data, diagonals).toarray()  # Note; Here using sparse.diags, not sparse.spdiags!
     
     alpha = anal_solution(0)
     beta = anal_solution(1)
@@ -230,7 +231,7 @@ def test_plot_AMR_solver(num_solver):
     M = 9
     x = np.linspace(0, 1, M+2)
     steps = 4
-    U, X, _, _ = AMR(x,steps,num_solver)
+    U, X, _, _, _= AMR(x,steps,num_solver)
     for i in range(0,steps+1):
         plt.plot(X[i],U[i],label=str(i))
 
@@ -250,7 +251,7 @@ U_2, X_2, disc_error_2, cont_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second)
 
 
 def plot_bar_error(X,U,start,stop):
-    """Plot error at each cell as bar-plot"""
+    """Plot error at each cell as bar-plot."""
     if stop > steps + 1:
         return 0
     
@@ -259,31 +260,32 @@ def plot_bar_error(X,U,start,stop):
     fig, axs = plt.subplots(rows, cols, sharex=True, figsize=(15,15))
     for i in range(start,stop):    
 
-        h = X[i][2:] - X[i][1:-1]
         u = anal_solution(X[i])   
         cell_errors = calc_cell_errors(u, U[i])
+        
         tol = 1 * np.average(cell_errors)
 
-    
-        axs.flatten()[i].plot([j for j in range(len(cell_errors))], [tol for j in range(len(cell_errors))],label='ave',linestyle='dashed') # Average AMR.
-        axs.flatten()[i].bar([j for j in range(len(cell_errors))], cell_errors, align='edge',label=str(i))
-        #Question; why plot with whole numbers as x-axis and not the x-grid we are refining for each step (X[i])?
+        axs.flatten()[i].plot(X[i][:-1], [tol for j in range(len(cell_errors))],label='ave',linestyle='dashed') # Average AMR.
+        axs.flatten()[i].bar(X[i][:-1], cell_errors, align='edge',label=str(i), )
+        # Tried to plot with X-axis above instead, but the plots go beyond 1, despite X[i] only going up to 1. 
     
     plt.legend()
     fig.tight_layout()
+    plt.setp(axs, xlim = (0,1)) # Forced the axis to stay in (0,1), but I think the fact that the shape stays the same might indicate that something is wrong :(
     plt.show()
 
 #plot_bar_error(X_2,U_2,0,steps)
 
 
 def plot_AMR_errors(save=False):
+    """Convergence plot from AMR."""
     h = 1/(M_2+1)
     plt.plot(M_1, disc_error_1, label="$e_l^r$ (3 point stencil)",color='red',marker='o',linewidth=2)
     plt.plot(M_1, cont_error_1, label="$e_L^r$ (3 point stencil)",color='red',linestyle="--",marker='o',linewidth=2)
     plt.plot(M_2, disc_error_2, label="$e_l^r$ (4 point stencil)",color='blue',marker='o',linewidth=2)
     plt.plot(M_2, cont_error_2, label="$e_L^r$ (4 point stencil)",color='blue',linestyle="--",marker='o',linewidth=2)
     plt.plot(M_2, 2*h, label="$O(h)$",color='green')
-    plt.plot(M_2, 71*h**2, label="$O(h^2)$",color='yellow')
+    plt.plot(M_2, 71*h**2, label="$O(h^2)$",color='orange')
     plt.ylabel(r"Error $e^r_{(\cdot)}$")
     plt.xlabel("Number of points M")
     plt.yscale('log')
@@ -294,4 +296,4 @@ def plot_AMR_errors(save=False):
         plt.savefig("loglogtask1dAMR.pdf")
     plt.show()
 
-plot_AMR_errors()
+#plot_AMR_errors()
