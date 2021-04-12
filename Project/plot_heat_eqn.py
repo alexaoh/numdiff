@@ -35,3 +35,4 @@ def sub(*, x, I, t, L, t_index, label):
     plt.subplots_adjust(wspace=0.5, hspace=0.5)
     fig.suptitle(label)
     plt.show()
+    
