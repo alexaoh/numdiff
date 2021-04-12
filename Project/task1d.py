@@ -1,3 +1,4 @@
+from task5 import plot_order
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
@@ -233,16 +234,6 @@ def test_plot_AMR_solver(num_solver):
     plt.legend()
     plt.show()
 
-#test_plot_AMR_solver(num_sol_AMR_second)
-
-#---plot errors---
-M = 9
-x0 = np.linspace(0, 1, M+2)
-steps = 16
-
-U_1, X_1, disc_error_1, cont_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
-U_2, X_2, disc_error_2, cont_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second)
-
 def plot_bar_error(X,U,start,stop):
     """Plot error at each cell as bar-plot."""
     if stop > steps + 1:
@@ -259,15 +250,10 @@ def plot_bar_error(X,U,start,stop):
         tol = 1 * np.average(cell_errors)
 
         axs.flatten()[i].plot(X[i][:-1], [tol for j in range(len(cell_errors))],label='ave',linestyle='dashed') # Average AMR.
-        axs.flatten()[i].bar(X[i][:-1], cell_errors, align='edge',label=str(i), )
-        # Tried to plot with X-axis above instead, but the plots go beyond 1, despite X[i] only going up to 1. 
+        axs.flatten()[i].bar(X[i][:-1], cell_errors, align='edge',label=str(i), width = np.diff(X[i]))
     
     plt.legend()
-    fig.tight_layout()
-    plt.setp(axs, xlim = (0,1)) # Forced the axis to stay in (0,1), but I think the fact that the shape stays the same might indicate that something is wrong :(
     plt.show()
-
-#plot_bar_error(X_2,U_2,0,steps)
 
 def plot_AMR_errors(save=False):
     """Convergence plot from AMR."""
@@ -276,8 +262,8 @@ def plot_AMR_errors(save=False):
     plt.plot(M_1, cont_error_1, label="$e_L^r$ (3 point stencil)",color='red',linestyle="--",marker='o',linewidth=2)
     plt.plot(M_2, disc_error_2, label="$e_l^r$ (4 point stencil)",color='blue',marker='o',linewidth=2)
     plt.plot(M_2, cont_error_2, label="$e_L^r$ (4 point stencil)",color='blue',linestyle="--",marker='o',linewidth=2)
-    plt.plot(M_2, 2*h, label="$O(h)$",color='green')
-    plt.plot(M_2, 71*h**2, label="$O(h^2)$",color='orange')
+    plot_order(M_1, disc_error_1[0], 1, "$O(h)$", 'green')
+    plot_order(M_2, disc_error_2[0], 2, "$O(h^2)$", 'orange')
     plt.ylabel(r"Error $e^r_{(\cdot)}$")
     plt.xlabel("Number of points M")
     plt.yscale('log')
@@ -288,4 +274,21 @@ def plot_AMR_errors(save=False):
         plt.savefig("loglogtask1dAMR.pdf")
     plt.show()
 
-#plot_AMR_errors()
+#====|----------------------|====#
+#====| Run code under here. |====#
+#====|----------------------|====#
+
+
+#test_plot_AMR_solver(num_sol_AMR_second)
+
+#---plot errors---#
+M = 9
+x0 = np.linspace(0, 1, M+2)
+steps = 16
+
+U_1, X_1, disc_error_1, cont_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
+U_2, X_2, disc_error_2, cont_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second)
+
+plot_AMR_errors()
+
+#plot_bar_error(X_1,U_1,0,steps)
