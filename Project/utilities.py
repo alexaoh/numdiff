@@ -4,7 +4,7 @@ import numpy.linalg as la
 from scipy.integrate import quad
 
 def cont_L2_norm(v, left, right):
-    """Continuous L2 norm of v(x) between left and right. """
+    """Continuous L2 norm of v(x) between left and right."""
     integrand = lambda x: v(x)**2
     return np.sqrt(quad(integrand, left, right)[0])
 

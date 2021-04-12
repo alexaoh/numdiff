@@ -1,4 +1,4 @@
-from scipy.sparse import spdiags,diags # Make sparse matrices with scipy.
+from scipy.sparse import spdiags, diags # Make sparse matrices with scipy.
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
@@ -16,10 +16,13 @@ def anal_solution(x):
     return np.exp(-(1/epsilon)*(x-0.5)**2)
 
 
-def num_sol_UMR(x,M,order): #order = 1 or 2
+def num_sol_UMR(x,M,order): # order = 1 or 2.
     """First order numerical solution of the Possion equation with Dirichlet B.C.,
-    given by the manufactured solution. Using a forward difference scheme.
+    given by the manufactured solution. Using a forward difference scheme. 
+
+    The parameter 'order' can take values 1 or 2. 
     """
+    assert(order == 1 or order == 2)
     h = 1/(M+1)
 
     # Construct Dirichlet boundary condition from manuactured solution.
@@ -33,19 +36,19 @@ def num_sol_UMR(x,M,order): #order = 1 or 2
     
     if order == 1:
         f_vec = np.full(M,f(x[:-2]))
-    else: #order = 2
+    else: # order = 2.
         f_vec = np.full(M, f(x[1:-1]))
     f_vec[0] = f_vec[0]- alpha/h**2
     f_vec[-1] = f_vec[-1] - beta/h**2
 
     # Solve linear system. 
-    Usol = la.solve(Ah, f_vec)
+    Usol = la.solve(Ah, f_vec) # Change this to a sparse solver!
     Usol = np.insert(Usol, 0, alpha)
     Usol = np.append(Usol,beta)
     
     return Usol
 
-### Uniform mesh refinement UMR
+#----------UMR--------------
 M_list = np.linspace(20,1000,20,dtype=int)
 h_list = 1/(M_list+1)
 
@@ -92,9 +95,9 @@ def plot_errors_UMR(save = False):
 
 #plot_errors_UMR()
 
-##--------- AMR--------------
+#----------AMR--------------
 def coeff_stencil(i,h):
-    """Calculates the coefficients in the four-point stencil for a given index i and list h."""
+    """Calculate the coefficients in the four-point stencil for a given index i and list h."""
     #d_p, d_m, d_2m = d_i+1, d_i-1, d_i-2 (notation from the article)
     if i==1:    #use a 3-point stencil with equal spacing at first iteration, that means h[0]=h[1].
         b = c = 1/h[0]**2
@@ -130,7 +133,7 @@ def num_sol_AMR_second(x):
     f_vec[1] = f_vec[1] - a[1]*alpha
     f_vec[-1] = f_vec[-1] - c[-1]*beta
 
-    Usol = la.solve(Ah, f_vec)
+    Usol = la.solve(Ah, f_vec) # Change this to a sparse solver later!
     Usol = np.insert(Usol, 0, alpha)
     Usol = np.append(Usol,beta)
     
@@ -156,15 +159,15 @@ def num_sol_AMR_first(x):
     f_vec[0] = f_vec[0] - alpha*b[0]
     f_vec[-1] = f_vec[-1] - beta*c[-1]
 
-    Usol = la.solve(Ah,f_vec)
+    Usol = la.solve(Ah,f_vec) # Change this to a sparse solver later!
     Usol = np.insert(Usol, 0, alpha)
     Usol = np.append(Usol, beta)
     
     return Usol
 
 def calc_cell_errors(u,U):
-    '''Calulculates an error for each cell by taking the avg of the error in the endpoints.'''
-    n = len(u) - 1 # Number of cells
+    """Calculates an error for each cell by taking the average of the error in the endpoints."""
+    n = len(u) - 1 # Number of cells.
     cell_errors = np.zeros(n)
     for i in range(n):
         cell_errors[i] = abs(U[i] - u[i])
@@ -172,7 +175,7 @@ def calc_cell_errors(u,U):
 
 
 def AMR(x0, steps, num_solver): 
-    """Uses mesh refinement 'steps' times. Finds the error, x-grid and numerical solution for each step."""
+    """Mesh refinement 'steps' amount of times. Find the error, x-grid and numerical solution for each step."""
     disc_error = np.zeros(steps+1)
     cont_error = np.zeros(steps+1)
     M_list = np.zeros(steps+1)
@@ -190,16 +193,16 @@ def AMR(x0, steps, num_solver):
         cell_errors = calc_cell_errors(u, Usol_M[-1])
         tol = 1 * np.average(cell_errors)
        
-        j = 0 # Index for x in case we insert points
+        j = 0 # Index for x in case we insert points.
 
-        # For testing if first or second cell have been refined
+        # For testing if first or second cell have been refined.
         firstCell = False
         for i in range(len(cell_errors)):
             if cell_errors[i] > tol:
                 x.insert(j+1, x[j] + 0.5 * (x[j+1] - x[j]))
                 j += 1
                 
-                # Tests to ensure that first and second cell have same length
+                # Tests to ensure that first and second cell have same length.
                 if i == 0:
                     firstCell = True
                     x.insert(j+1, x[j] + 0.5 * (x[j+1] - x[j]))
@@ -213,7 +216,7 @@ def AMR(x0, steps, num_solver):
         X_M.append(x)
         Usol_M.append(num_solver(x))
         
-    #add last elements
+    # Add last elements.
     u = anal_solution(X_M[-1])
     disc_error[-1] = e_l(Usol_M[-1],u)
     interpU = interp1d(X_M[-1], Usol_M[-1], kind = 'cubic')
@@ -262,7 +265,7 @@ def plot_bar_error(X,U,start,stop):
         tol = 1 * np.average(cell_errors)
 
     
-        axs.flatten()[i].plot([j for j in range(len(cell_errors))], [tol for j in range(len(cell_errors))],label='ave',linestyle='dashed') #average AMR
+        axs.flatten()[i].plot([j for j in range(len(cell_errors))], [tol for j in range(len(cell_errors))],label='ave',linestyle='dashed') # Average AMR.
         axs.flatten()[i].bar([j for j in range(len(cell_errors))], cell_errors, align='edge',label=str(i))
         #Question; why plot with whole numbers as x-axis and not the x-grid we are refining for each step (X[i])?
     
