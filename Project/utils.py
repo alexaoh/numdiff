@@ -1,7 +1,6 @@
 """Random utility functions are placed here for now."""
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 def forward_subsSOR(LU,b):
     ''' Forover substitusjonsalgoritme
@@ -103,7 +102,3 @@ def backward_subs(LU,P,c):
         
     return x
 
-def plot_order(Ndof, error_start, order, label, color):
-    """Plots Ndof^{-order} from error_start."""
-    const = (error_start)**(1/order)*Ndof[0]
-    plt.plot(Ndof, (const*1/Ndof)**order, label=label, color=color, linestyle='dashed')
