@@ -1,10 +1,9 @@
+"""Solves u_t = u_xx on x[0,1], t[0,T] with reference to manufactured solution with UMR with r-refinement.
 
-'''
-Solves u_t = u_xx on x[0,1], t[0,T] with reference to manufactured solution with UMR with r-refinement.
 Dirichlet BC u(0,t)=u(1,t)=0, and initial value f(x)=3*sin(2*pi*x)
-First order method; uses Eulers method (forward)
+First order method; forward Euler's method
 Second order; Crank Nicolson
-'''
+"""
 
 from plot_heat_eqn import *
 from scipy.sparse import spdiags # Make sparse matrices with scipy.
@@ -29,7 +28,7 @@ def e_l(U, u):
 
 
 def cont_L2_norm(v, t):
-    """Continuous L2 norm of v(x) between left and right. """
+    """Continuous L2 norm of v(x) between left and right."""
     integrand = lambda x: v(x,t)**2
     return np.sqrt(quad(integrand, 0, 1)[0])
 
@@ -92,6 +91,7 @@ def theta_method(x, t, theta):
     return U
 
 #x = np.linspace(0,1,M+2)
+# Is this code needed?
 '''
 U_BE = theta_method(x,t,1)
 U_CN = theta_method(x,t,1/2)
@@ -106,6 +106,7 @@ plt.show()
 # Choose time t[-1]=T=0.2, as the time to look at errors.
 
 def plot_UMR(M,N,type): # type = 't', 'h' or 'r'-refinement
+    """Missing docstring here."""
     T = 0.2
     time_index = -1
     refine_list = []
@@ -174,5 +175,3 @@ N = np.array([8,16,32,64,128,256])
 M = np.array([64,128,256,512,1024,2048])
 N = np.array([4,16,64,256,1024,4096])
 plot_UMR(M,N,'r')  #BE og CN går som O(h^2/3) (etterhvert i hvert fall)
-
-
