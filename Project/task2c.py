@@ -14,31 +14,31 @@ def RK4_step(k, t_i, y, f):  #<--- This function can be imported from integrator
     s4 = f(t_i + k, y + k * s3) 
     return y + (k / 6) * (s1 + (2 * s2) + (2 * s3) + s4)
 
-def numSol(x, t, method):   #Obs, initial conditions does not fit boundary conditions perfectly
+def num_sol(x, t, method):   #Obs, initial conditions does not fit boundary conditions perfectly
     '''Solves the ODE \dot{v} = f(t,v) with a specified method'''
     M = len(x)-2
     N = len(t)-1
     h = x[1] - x[0]
     k = t[1] - t[0]
     
-    vList = np.zeros((N+1,M+2))
+    v_list = np.zeros((N+1,M+2))
     
     #Solves for internal grid points
-    vList[0,1:-1] = initial(x[1:-1])
+    v_list[0,1:-1] = initial(x[1:-1])
     F = lambda t, v : np.concatenate(([-v[0]*v[1]], -v[1:-1]*(v[2:] - v[0:-2]), [v[-1]*v[-2]]))/(2*h)
     
     for i in range(N):
-        vList[i+1,1:-1] = method(k, t[i], vList[i,1:-1], F)  
+        v_list[i+1,1:-1] = method(k, t[i], v_list[i,1:-1], F)  
     
     #Add B.C
     zeros = np.zeros_like(t)
-    vList[:,0] = vList[:,-1] = zeros
-    return vList
+    v_list[:,0] = v_list[:,-1] = zeros
+    return v_list
 
-def plotTail(n, interval, sol, xGrid, tGrid):
+def plot_tail(n, interval, sol, x, t):
     '''Plots the n last iterations of the solution'''
     for i in range(1, n*interval, interval):
-        plt.plot(xGrid, sol[-i, :], label = f"$t = {tGrid[-i]}$")
+        plt.plot(x, sol[-i, :], label = f"$t = {t[-i]}$")
     
     plt.xlabel('$x$')
     plt.ylabel('$u(x,t)$')
@@ -52,15 +52,16 @@ T = 0.06
 x = np.linspace(0, 1, M+2)
 t = np.linspace(0, T, N+1)
 
-sol = numSol(x, t, RK4_step)
+sol = num_sol(x, t, RK4_step)
 
-plotTail(4, 50, sol, x, t)
+plot_tail(4, 50, sol, x, t)
 
 
 
 # Solve with scipy RK45
 def scipy_solution(x,t0,t_bound):
-    """Solves the ODE with scipy's integrated function RK45 and plot the solution at t_bound"""
+    """Solves the ODE with scipy's integrated function 
+    RK45 and plot the solution at t_bound"""
     
     h = x[1] - x[0]
     F = lambda t, v : np.concatenate(([-v[0]*v[1]], -v[1:-1]*(v[2:] - v[0:-2]), [v[-1]*v[-2]]))/(2*h)
