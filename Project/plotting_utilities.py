@@ -18,12 +18,12 @@ def plot3d_sol(U, xv, yv, Uan = False, savename = False):
     ax.set_xlabel("$x$")
     ax.set_ylabel("$y$")
     ax.set_zlabel("Intensity")
-    fig.colorbar(surface, shrink=0.5, aspect=5)
+    #fig.colorbar(surface, shrink=0.5, aspect=5)
     if callable(Uan):
         x = y = np.linspace(0, 1, 1000) # Gives three internal points + boundaries.
         xv, yv = np.meshgrid(x, y)
         surface2 = ax.plot_surface(xv, yv, Uan(xv, yv), cmap="Greys", alpha = 0.7)
-        fig.colorbar(surface2, shrink=0.5, aspect=5)
+        #fig.colorbar(surface2, shrink=0.5, aspect=5)
     if savename:
         plt.savefig(savename+".pdf")
     plt.show()
