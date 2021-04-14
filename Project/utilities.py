@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 def cont_L2_norm(v, left, right):
     """Continuous L2 norm of v(x) between left and right."""
+    assert(callable(v))
     integrand = lambda x: v(x)**2
     return np.sqrt(quad(integrand, left, right)[0])
 
@@ -15,6 +16,7 @@ def e_L(U, u, left, right):
     U: Approximate numerical solution.
     u: Function returning analytical solution. 
     """
+    assert(callable(u) and callable(U))
     f = lambda x : u(x) - U(x)
     numer = cont_L2_norm(f, left, right)
     denom = cont_L2_norm(u, left, right)
@@ -27,6 +29,7 @@ def e_l(U, u):
     U: Approximate numerical solution.
     u: Analytical solution. 
     """
+    assert(not callable(u) and not callable(U))
     return la.norm(u-U)/la.norm(u)
 
 def plot_order(Ndof, error_start, order, label, color):
