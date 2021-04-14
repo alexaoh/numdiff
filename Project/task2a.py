@@ -62,7 +62,7 @@ def calc_sol(x, t, order, theta, plot = False):
     
     
     V0 = [initial(x) for x in x]
-    sol = theta_method_given_Q(x, t, V0, Q, theta) # Q: Is this the right form, using BE and CN for first and second order?
+    sol = theta_method_given_Q(x, t, V0, Q, theta) 
   
     if plot:
         tv, xv = np.meshgrid(t,x)
@@ -113,10 +113,10 @@ def calc_error(M, N, filename, typ):
         t = np.linspace(0,T,N[i]+1)
         sol_1 = calc_sol(x, t, 2, 1)
         sol_2 = calc_sol(x, t, 2, 1/2)
-        uStar = ref_sol[-1,0::(Mstar//M[i])]
+        u_star = ref_sol[-1,0::(Mstar//M[i])]
        
-        disc_err_first[i] = e_l(sol_1[-1,:], uStar)
-        disc_err_second[i] = e_l(sol_2[-1,:], uStar)      
+        disc_err_first[i] = e_l(sol_1[-1,:], u_star)
+        disc_err_second[i] = e_l(sol_2[-1,:], u_star)      
     
     MN = M*N
 
@@ -135,6 +135,43 @@ def calc_error(M, N, filename, typ):
     plt.grid()
     plt.show()
 
+def compare_discr(M, N, filename):
+    """Compares the first and second order discretizations of the BCs by makeing a convergence plot."""
+    ref_sol = None
+    with open(filename, 'rb') as fi: 
+        ref_sol = pickle.load(fi)
+    
+    N = np.ones_like(M)*N
+    disc_err_first = np.zeros(len(M))
+    disc_err_second = np.zeros(len(M))
+    T = 0.2
+    for i in range(len(M)):
+        x = np.linspace(0,1,M[i]+1)
+        t = np.linspace(0,T,N[i]+1)
+        sol_1 = calc_sol(x, t, 1, 1/2)
+        sol_2 = calc_sol(x, t, 2, 1/2)
+        u_star = ref_sol[-1,0::(Mstar//M[i])]
+       
+        disc_err_first[i] = e_l(sol_1[-1,:], u_star)
+        disc_err_second[i] = e_l(sol_2[-1,:], u_star)      
+    
+    MN = M*N
+
+    plt.plot(MN, disc_err_first, label = "$e^r_l$ (1st order)",color='red',marker='o')
+    plt.plot(MN, disc_err_second, label = "$e^r_l$ (2nd order)",color='blue',marker='o')
+
+    # These need to be changed manually!
+    plot_order(MN, disc_err_first[0], 1, label = "$O(N_{dof}^{-1})$", color = 'red')
+    plot_order(MN, disc_err_second[0], 2, label = "$O(N_{dof}^{-2})}$", color='blue')
+
+    plt.yscale("log")
+    plt.xscale("log")
+    plt.xlabel('$M*N$')
+    plt.ylabel(r"Error $e^r_{l}$")
+    plt.legend()
+    plt.grid()
+    plt.show()
+
 
 # ====| Run code below. |==== #
 
@@ -143,6 +180,15 @@ filename = 'ref_sol.pk'
 # We use 2 order disc. of BC and CN for the reference solution.
 #save_ref_sol(Mstar, Nstar, 2, 1/2, filename) # Only needs to be run once, or if you change Mstar
 
+# ---| Plot solution. |--- #
+x = np.linspace(0, 1, 1000)
+t = np.linspace(0, 0.2, 100)
+#calc_sol(x, t, 2, 1/2, True)
+
+# ---| Compare firts and second order disc. of BCs. |--- # 
+N = 1000
+M = np.array([8,10,20,25,40,50,100,125,200,250,500])
+compare_discr(M,N,filename)
 
 
 # ---| h-refinement. |--- # 
