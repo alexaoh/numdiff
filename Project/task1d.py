@@ -5,6 +5,7 @@ from utilities import *
 from scipy.interpolate import interp1d 
 import scipy.sparse.linalg as sla
 import scipy.sparse as sp
+from matplotlib.cm import get_cmap
 
 epsilon = 0.01
 def f(x):
@@ -29,7 +30,7 @@ def num_sol_UMR(x,M,order): # order = 1 or 2.
     beta = anal_solution(x[-1])
     
     # Construct Ah. 
-    data = np.array([np.full(M, 1), np.full(M, -2), np.full(M, 1)]*1/h**2)
+    data = np.array([np.full(M, 1), np.full(M, -2), np.full(M, 1)])*1/h**2
     diags = np.array([-1, 0, 1])
     Ah = sp.diags(data, diags, shape = [M, M], format = "csc")
     
@@ -73,14 +74,14 @@ for i, m in enumerate(M_list):
     e_1_cont[i] = e_L(interpU_first, anal_solution, x[0], x[-1])
     e_2_cont[i] = e_L(interpU_second, anal_solution, x[0], x[-1])
 
-def plot_errors_UMR(save = False):
-    """Encapsulation, to avoid commenting while development."""
-    plt.plot(M_list,e_2_cont,label=r"$e^r_{L_2}$ second", color = "orange",marker='o')
+def plot_UMR_errors(save = False):
+    """Convergence plot from UMR."""
+    plt.plot(M_list,e_2_cont,label=r"$e^r_{L_2}$ second", color = "black",marker='o')
     plt.plot(M_list,e_1_cont,label=r"$e^r_{L_2}$ first", color = "green",marker='o')
     plt.plot(M_list,e_1_disc,label=r"$e^r_{l}$ first", color = "red",marker='o',linestyle = "--")
     plt.plot(M_list,e_2_disc,label=r"$e^r_l$ second", color = "blue",marker='o',linestyle = "--")
-    plt.plot(M_list,7*h_list,label=r"O$(h)$",linestyle='dashed', color = "red")
-    plt.plot(M_list,10*h_list**2,label=r"O$(h^2)$",linestyle='dashed', color = "blue")
+    plt.plot(M_list,7*h_list,label=r"$\mathcal{O}(h)$",linestyle='dashed', color = "red")
+    plt.plot(M_list,10*h_list**2,label=r"$\mathcal{O}(h^2)$",linestyle='dashed', color = "blue")
     
     plt.ylabel(r"Error $e^r_{(\cdot)}$")
     plt.xlabel("Number of points $M$")
@@ -92,7 +93,20 @@ def plot_errors_UMR(save = False):
         plt.savefig("loglogtask1dUMR.pdf")
     plt.show()
 
-#plot_errors_UMR()
+def plot_UMR_solution(save = False):
+    """Plot analytical solution and numerical solution using AMR."""
+    M = 500
+    x = np.linspace(0,1,M+2)
+    u = anal_solution(x)
+    first_order_num = num_sol_UMR(x,M,1)
+    second_order_num = num_sol_UMR(x,M,2)
+    plt.plot(x,u,label="An", color = "blue")
+    plt.plot(x, first_order_num, label = "First", linestyle = "dotted", color = "green")
+    plt.plot(x, second_order_num, label = "Second", linestyle = "dotted", color = "red")
+    plt.legend()
+    if save:
+        plt.savefig("solutionTask1dUMR.pdf")
+    plt.show()
 
 #----------AMR--------------
 def coeff_stencil(i,h):
@@ -172,6 +186,7 @@ def calc_cell_errors(u,U):
 
 def AMR(x0, steps, num_solver): 
     """Mesh refinement 'steps' amount of times. Find the error, x-grid and numerical solution for each step."""
+    assert(callable(num_solver))
     disc_error = np.zeros(steps+1)
     cont_error = np.zeros(steps+1)
     M_list = np.zeros(steps+1)
@@ -220,17 +235,34 @@ def AMR(x0, steps, num_solver):
     M_list[-1] = len(X_M[-1])-2
     return Usol_M, X_M, disc_error, cont_error, M_list
 
-def test_plot_AMR_solver(num_solver):
-    """Show plots of numerical and analytical solution."""
-    M = 9
+def plot_AMR_solution(num_solver, save = False):
+    """Plot analytical solution and numerical solution using AMR."""
+    assert(callable(num_solver))
+    M = 10
     x = np.linspace(0, 1, M+2)
-    steps = 4
+    steps = 7
     U, X, _, _, _= AMR(x,steps,num_solver)
-    for i in range(0,steps+1):
-        plt.plot(X[i],U[i],label=str(i))
 
-    plt.plot(X[-1],anal_solution(X[-1]),label="An",linestyle='dotted')
+    # For colors in plot. 
+    name = "tab10"
+    cmap = get_cmap(name)  # type: matplotlib.colors.ListedColormap
+    colors = cmap.colors  # type: list
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_prop_cycle(color=colors)
+    ax.plot(X[-1],anal_solution(X[-1]),label="An",color = "black", linewidth = 2.0)
+
+    for i in range(0,steps+1):
+        ax.plot(X[i],U[i],label=str(i), linestyle = "dashed", linewidth = 2.0)
+
+    
     plt.legend()
+    if save:
+        if "first" in num_solver.__name__:
+            plt.savefig("solutionTask1dAMRFirst.pdf")
+        elif "second" in num_solver.__name__:
+            plt.savefig("solutionTask1dAMRSecond.pdf")
     plt.show()
 
 def plot_bar_error(X,U,start,stop):
@@ -261,8 +293,8 @@ def plot_AMR_errors(save=False):
     plt.plot(M_1, cont_error_1, label="$e_L^r$ (3 point stencil)",color='red',linestyle="--",marker='o',linewidth=2)
     plt.plot(M_2, disc_error_2, label="$e_l^r$ (4 point stencil)",color='blue',marker='o',linewidth=2)
     plt.plot(M_2, cont_error_2, label="$e_L^r$ (4 point stencil)",color='blue',linestyle="--",marker='o',linewidth=2)
-    plot_order(M_1, disc_error_1[0], 1, "$O(h)$", 'green')
-    plot_order(M_2, disc_error_2[0], 2, "$O(h^2)$", 'orange')
+    plot_order(M_1, disc_error_1[0], 1, r"$\mathcal{O}(h)$", 'green')
+    plot_order(M_2, disc_error_2[0], 2, r"$\mathcal{O}(h^2)$", 'black')
     plt.ylabel(r"Error $e^r_{(\cdot)}$")
     plt.xlabel("Number of points M")
     plt.yscale('log')
@@ -273,12 +305,15 @@ def plot_AMR_errors(save=False):
         plt.savefig("loglogtask1dAMR.pdf")
     plt.show()
 
-#====|----------------------|====#
-#====| Run code under here. |====#
-#====|----------------------|====#
+#====|-----------------|====#
+#====| Run code below. |====#
+#====|-----------------|====#
 
+#plot_UMR_solution()
+#plot_UMR_errors()
 
-#test_plot_AMR_solver(num_sol_AMR_second)
+plot_AMR_solution(num_sol_AMR_first)
+plot_AMR_solution(num_sol_AMR_second)
 
 #---plot errors---#
 M = 9
@@ -288,6 +323,6 @@ steps = 16
 U_1, X_1, disc_error_1, cont_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
 U_2, X_2, disc_error_2, cont_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second)
 
-plot_AMR_errors()
+#plot_AMR_errors()
 
 #plot_bar_error(X_1,U_1,0,steps)
