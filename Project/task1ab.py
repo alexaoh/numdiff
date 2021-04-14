@@ -78,7 +78,7 @@ class Task1ab:
         ax.set_yscale("log")
         ax.plot(M, discrete_error, label=r"$e^r_\ell$", color = "blue", marker = "o", linewidth = 3)
         ax.plot(M, cont_error, label = r"$e^r_{L_2}$", color = "red", linestyle = "--", marker = "o", linewidth = 2)
-        ax.plot(M, (lambda x: 1/x**2)(M), label=r"$O$($h^2$)", color = "green", linewidth = 2)
+        ax.plot(M, (lambda x: 1/x**2)(M), label=r"$\mathcal{O}$($h^2$)", color = "green", linewidth = 2)
         ax.set_ylabel(r"Error $e^r_{(\cdot)}$")
         ax.set_xlabel("Number of points M")
         plt.legend()
