@@ -2,13 +2,13 @@
 
 h and k, i.e. step sizes in x and y respectively, DO NOT have to be equal. 
 """
-
 from scipy.sparse import diags # Make sparse matrices with scipy.
 import scipy.sparse.linalg
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
 from plotting_utilities import plot3d_sol
+from utilities import *
 
 def analytic_solution(x, y):
     """Analytical solution to the 2D Laplace equation."""
@@ -66,10 +66,7 @@ def num_solution_Mx_My(Mx, My):
 
     return U, xv, yv
 
-U, xv, yv = num_solution_Mx_My(Mx = 50, My = 50)
-plot3d_sol(U, xv, yv, Uan = analytic_solution)
-
-def constant_My_convergence_plot(My):
+def constant_My_convergence_plot(My, savename = False):
     """Convergence plot with My kept constant and Mx increasing."""
     maximum = 2**11
     Mx = 2 ** np.arange(1, np.log(maximum)/np.log(2)+1, dtype = int)
@@ -78,9 +75,9 @@ def constant_My_convergence_plot(My):
         Usol, xv, yv = num_solution_Mx_My(Mx = m, My = My)
         analsol = analytic_solution(xv, yv)
 
-        discrete_error[i] = la.norm(analsol-Usol)/la.norm(analsol)
+        discrete_error[i] = e_l(Usol, analsol)
 
-    def plot_plots(savename = False):
+    def plot_plots(savename = savename):
         """Encapsulation for development purposes."""
         power = 1.5
         fig = plt.figure()
@@ -88,7 +85,7 @@ def constant_My_convergence_plot(My):
         ax.set_xscale("log")
         ax.set_yscale("log")
         ax.plot(Mx*My, discrete_error, label=r"$e^r_\ell$", color = "blue", marker = "o", linewidth = 3)
-        ax.plot(Mx*My, (lambda x: 1/x**power)(Mx), label=r"$O$($h^{%s}$)" % str(power), color = "red", linewidth = 2)
+        plot_order(Mx*My, discrete_error[0], power, r"$\mathcal{O}$($h^{%s}$)" % str(power), "red")
         ax.set_ylabel(r"Error $e^r_{(\cdot)}$")
         ax.set_xlabel(r"$M_x \cdot M_y$")
         fig.suptitle(r"$M_y = $"+str(My)+" constant")
@@ -100,7 +97,7 @@ def constant_My_convergence_plot(My):
 
     plot_plots()
 
-def constant_Mx_convergence_plot(Mx):
+def constant_Mx_convergence_plot(Mx, savename = False):
     """Convergence plot with Mx kept constant and My increasing."""
     maximum = 2**11
     My = 2 ** np.arange(1, np.log(maximum)/np.log(2)+1, dtype = int)
@@ -111,17 +108,19 @@ def constant_Mx_convergence_plot(Mx):
         Usol, xv, yv = num_solution_Mx_My(Mx = Mx, My = m)
         analsol = analytic_solution(xv, yv)
 
-        discrete_error[i] = la.norm(analsol-Usol)/la.norm(analsol)
+        discrete_error[i] = e_l(Usol, analsol)
 
-    def plot_plots(savename = False):
+    def plot_plots(savename = savename):
         """Encapsulation for development purposes."""
         power = 1.5
+        power2 = 2.0
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.set_xscale("log")
         ax.set_yscale("log")
         ax.plot(Mx*My, discrete_error, label=r"$e^r_\ell$", color = "blue", marker = "o", linewidth = 3)
-        ax.plot(Mx*My, (lambda x: 1/x**power)(My), label=r"$O$($h^{%s}$)" % str(power), color = "red", linewidth = 2)
+        plot_order(Mx*My, discrete_error[0], power, r"$\mathcal{O}$($h^{%s}$)" % str(power), "red")
+        plot_order(Mx*My, discrete_error[0], power2, r"$\mathcal{O}$($h^{%s}$)" % str(power2), "green")
         ax.set_ylabel(r"Error $e^r_{(\cdot)}$")
         ax.set_xlabel(r"$M_y \cdot M_y$")
         fig.suptitle(r"$M_x = $"+str(Mx)+" constant")
@@ -133,30 +132,26 @@ def constant_Mx_convergence_plot(Mx):
 
     plot_plots()
 
-def convergence_plot_both_varying():
+def convergence_plot_both_varying(savename=False):
     """Convergence plot with both Mx and My varying."""
     maximum = 2**10
     My = Mx = 2 ** np.arange(1, np.log(maximum)/np.log(2)+1, dtype = int)
     discrete_error = np.zeros(len(My))
     
     for i in range(len(My)):
-        
         Usol, xv, yv = num_solution_Mx_My(Mx = Mx[i], My = My[i])
         analsol = analytic_solution(xv, yv)
+        discrete_error[i] = e_l(Usol, analsol)
 
-        discrete_error[i] = la.norm(analsol-Usol)/la.norm(analsol)
-
-    def plot_plots(savename = False):
+    def plot_plots(savename = savename):
         """Encapsulation for development purposes."""
-        power = 1.5
-        power2 = 2
+        power = 1.0
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.set_xscale("log")
         ax.set_yscale("log")
         ax.plot(Mx*My, discrete_error, label=r"$e^r_\ell$", color = "blue", marker = "o", linewidth = 3)
-        ax.plot(Mx*My, (lambda x: 1/x**power)(Mx), label=r"$O$($h^{%s}$)" % str(power), color = "red", linewidth = 2)
-        ax.plot(Mx*My, (lambda x: 1/x**power2)(Mx), label=r"$O$($h^{%s}$)" % str(power2), color = "green", linewidth = 2)
+        plot_order(Mx*My, discrete_error[0], power, r"$\mathcal{O}$($h^{%s}$)" % str(power), "red")
         ax.set_ylabel(r"Error $e^r_{(\cdot)}$")
         ax.set_xlabel(r"$M_y \cdot M_y$")
         fig.suptitle(r"$M_x$"+" and "+r"$M_y$"+" varying")
@@ -166,4 +161,9 @@ def convergence_plot_both_varying():
             plt.savefig(savename+".pdf")
         plt.show() 
 
-    plot_plots("task3bBothVary")
+    plot_plots()
+
+# U, xv, yv = num_solution_Mx_My(Mx = 50, My = 50)
+# plot3d_sol(U, xv, yv, Uan = analytic_solution)
+
+#convergence_plot_both_varying()

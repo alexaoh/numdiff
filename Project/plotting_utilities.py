@@ -8,10 +8,10 @@ def plot3d_sol(U, xv, yv, Uan = False, savename = False):
     """Plot numerical solution (and optionally analytical) for task 3: 2D Laplace. """
     # Taken from three_dim_plot and heavily modified later (could be added to utilities or something in the end).
     fig = plt.figure()
-    if callable(Uan):
-        fig.suptitle("Num Sol, M = "+str(U.shape[0]-2)+", + An Sol")
-    else: 
-        fig.suptitle("Num Sol, Mx = "+str(U.shape[1]-2)+" My = "+str(U.shape[0]-2))
+    # if callable(Uan):
+    #     fig.suptitle("Num Sol, M = "+str(U.shape[0]-2)+", + An Sol")
+    # else: 
+    #     fig.suptitle("Num Sol, Mx = "+str(U.shape[1]-2)+" My = "+str(U.shape[0]-2))
     ax = fig.gca(projection="3d")
     ax.view_init(azim=55, elev=15) # Added some rotation to the figure. 
     surface = ax.plot_surface(xv, yv, U, cmap="seismic") 
