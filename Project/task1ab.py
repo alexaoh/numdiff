@@ -60,7 +60,7 @@ class Task1ab:
         Input: 
         save: Dictate if a pdf of the plot is saved or not.
         """
-        M = np.arange(2, 1012/5, 10, dtype = int)
+        M = 2**np.arange(2, 11, dtype = int)
         discrete_error = np.zeros(len(M))
         cont_error = np.zeros(len(M))
 
@@ -102,6 +102,7 @@ class Task1ab:
     #----Utility methods to calculate numerical solutions follow.---- 
     def num_solution_a(self, x, M):
         """Numerical solution of the Possion equation with given Neumann BC in 1a)."""
+        assert(M >= 3)
         h = 1/(M+1)
 
         # Construct Ah. 
