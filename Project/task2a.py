@@ -51,10 +51,12 @@ def theta_method_given_Q(x, t, V0, Q, theta):
         
     return sol
 
-def calcSol(x, t, order, theta, plot = False):
-    """ Hva gjør denne egentlig? Skriv her ;)
-    order = 1: Use bd and fd on bc + trapezoidal.
-    order = 2: Use central differences with fict. nodes on bc + trapezoidal.
+def calc_sol(x, t, order, theta, plot = False):
+    """ 
+    order = 1: Use first oder disc. on BC.
+    order = 2: Use second order disc. on BC.
+    theta = 1: Backward Euler.
+    theta = 1/2: Trapezoidal rule (CN).
     """
     M = len(x)-1
     # Construct Q.
@@ -81,40 +83,35 @@ def calcSol(x, t, order, theta, plot = False):
     return sol
 
 
-def saveRefSol(Mstar, Nstar, order, filename):
+def save_ref_sol(Mstar, Nstar, order, theta, filename):
     """Save the reference solution to file."""
-    #refSol = calcSol(Mstar, order, plot = False)
     T = 0.2
     x = np.linspace(0,1,Mstar+1)
     t = np.linspace(0,T,Nstar+1)
-    refSol = calcSol(x, t, order) # Tror det mangler noen argumenter her muligens.
+    ref_sol = calc_sol(x, t, order, theta) 
     with open(filename, 'wb') as fi:
-        pickle.dump(refSol, fi)
+        pickle.dump(ref_sol, fi)
 
 
-def calcError(M,N,filename,typ):  #type = h,t,r - refinement. M,N are either lists or scalars depending on type of refinement
-                                  ##### Ta bort disse kommentarene hvis nok info står i docstring nedenfor.
+def calc_error(M, N, filename, typ): 
     """Calculate the relative error with the reference solution.
-    
     Input:
-    M: List of ...
-    N: List of ...
+    M: List or scalar depending on the type of refinement.
+    N: List or scalar depending on the type of refinement.
     filename: Name of the file where the reference solution has been saved. 
-    type: h or t ...
+    type: h, t or r - refinement.
     """
-    assert(typ == "t" or typ == "r") # SKulle det vært noe r - refinement her?
-    refSol = None
+    assert(typ == "t" or typ == "r" or typ == "h") # SKulle det vært noe r - refinement her?
+    ref_sol = None
     Mstar = Nstar = 1000   # Change values here if you change it in the file.
     with open(filename, 'rb') as fi: 
-        refSol = pickle.load(fi)
+        ref_sol = pickle.load(fi)
 
-    T = 0.2  
-    refTime = -1 
     if typ=='h':
         N = np.ones_like(M)*N
     elif typ=='t':
         M = np.ones_like(N)*M
-    modulus = Mstar % M    #controls that M are divisible by Mstar. This does not apply to N because we look at error in T which is similar for both sol and refSol
+    modulus = Mstar % M    # Controls that M are divisible by Mstar. This does not apply to N because we look at error in T which is similar for both sol and ref_sol
     if len(modulus[np.nonzero(modulus)]) != 0:
         print('Wrong M values.')
         return 1
@@ -122,27 +119,26 @@ def calcError(M,N,filename,typ):  #type = h,t,r - refinement. M,N are either lis
     disc_err_first = np.zeros(len(M))
     disc_err_second = np.zeros(len(M))
 
-    # Piecewise constant function uStar.
-    # piecewise = lambda Ustar, M, Mstar : [Ustar[math.floor(i*(Mstar + 1)/(M + 1))] for i in range(M + 1)].
+    T = 0.2
     for i in range(len(M)):
         x = np.linspace(0,1,M[i]+1)
         t = np.linspace(0,T,N[i]+1)
-        sol_1 = calcSol(x, t, 2, 1)
-        sol_2 = calcSol(x, t, 2, 1/2)
-        #uStar = np.array(piecewise(refSol[refTime,:], M, Mstar))
-        uStar = refSol[refTime,0::(Mstar//M[i])]
+        sol_1 = calc_sol(x, t, 2, 1)
+        sol_2 = calc_sol(x, t, 2, 1/2)
+        uStar = ref_sol[-1,0::(Mstar//M[i])]
        
-        disc_err_first[i] = e_l(sol_1[refTime,:], uStar)
-        disc_err_second[i] = e_l(sol_2[refTime,:], uStar)      
+        disc_err_first[i] = e_l(sol_1[-1,:], uStar)
+        disc_err_second[i] = e_l(sol_2[-1,:], uStar)      
     
     MN = M*N
     Ndof = 1/MN
+
     plt.plot(MN, disc_err_first, label = "$e^r_l$ (BE)",color='red',marker='o')
     plt.plot(MN, disc_err_second, label = "$e^r_l$ (CN)",color='blue',marker='o')
-    #plt.plot(MN, (3e-1)*Ndof**(1/2), label="$O(N_{dof}^{-1/2})$", color='red', linestyle='dashed') 
 
     plot_order(Ndof, disc_err_first[0], 1/2, label = "$O(N_{dof}^{-1/2})$", color = 'red')
     plot_order(Ndof, disc_err_second[0], 1, label = "$O(N_{dof}^{-1})}$", color='blue')
+
     plt.yscale("log")
     plt.xscale("log")
     plt.xlabel('$M*N$')
@@ -151,32 +147,29 @@ def calcError(M,N,filename,typ):  #type = h,t,r - refinement. M,N are either lis
     plt.grid()
     plt.show()
 
-# Kan rydde litt nedenfor også kanskje?
 
 Mstar = Nstar = 1000
-filename = 'refSol.pk'
+filename = 'ref_sol.pk'
+#save_ref_sol(Mstar, Nstar, 2, 1/2, filename) # Only needs to be run once, or if you change Mstar
 
-#saveRefSol(Mstar, Nstar, 2, filename) # Only needs to be run once, or if you change Mstar
-## ObsObs, here I have used refSol with order 2 for comparing with both orders, is this wrong or just more accurate?
 
 # h -refinement
 N = 1000
 M = np.array([8,10,20,25,40,50,100,125,200,250,500])
-
-#calcError(M,N,filename,'h')
+#calc_error(M,N,filename,'h')
 
 # t - refinement
 M = 1000
 #N = np.array([8,10,20,25,40,50,100,125,200,250,500])
 N = np.array([4,8,16,32,64,128,256])  #does not have to be divisible by Nstar
-#calcError(M,N,filename,'t')  #why does the first order method give a much lower error at last point (N=500)?
+#calc_error(M,N,filename,'t')  #why does the first order method give a much lower error at last point (N=500)?
 
 # r -refinement, here both M and N increases.
 M = np.array([8,10,20,25,40,50,100,125,200,250,500])
 N = np.array([8,10,20,25,40,50,100,125,200,250,500])
-calcError(M,N,filename,'r')  #gives BE; Ndof^(-1/2) and CN; Ndof^(-1)
+calc_error(M,N,filename,'r')  #gives BE; Ndof^(-1/2) and CN; Ndof^(-1)
 
 # r -refinement, keeping r fixed, r=40=M^2/N. Difficult to choose appropriate values
 M = np.array([20,25,40,50,100,125,200])
 N = np.array([10,16,40,63,250,391,1000]) 
-#calcError(M,N,filename,'r')  #gives something weird :=O
+#calc_error(M,N,filename,'r')  #gives something weird :=O
