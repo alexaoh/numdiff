@@ -5,11 +5,6 @@ import numpy as np
 import numpy.linalg as la
 import pickle # To save the reference solution.
 from utilities import *
-'''
-def plot_order(Ndof, error_start, order, label, color):
-    const = error_start/Ndof[0]**order
-    plt.plot(1/Ndof, const*Ndof**order, label=label, color=color, linestyle='dashed')
-'''
 
 initial = (lambda x: 2*np.pi*x - np.sin(2*np.pi*x))
 
@@ -124,8 +119,8 @@ def calc_error(M, N, filename, typ):
     plt.plot(MN, disc_err_second, label = "$e^r_l$ (CN)",color='blue',marker='o')
 
     # These need to be changed manually!
-    plot_order(MN, disc_err_first[0], 1/2, label = "$O(N_{dof}^{-1/2})$", color = 'red')
-    plot_order(MN, disc_err_second[0], 1, label = "$O(N_{dof}^{-1})}$", color='blue')
+    #plot_order(MN, disc_err_first[0], 1, label = r"$\mathcal{O}(N_{dof}^{-1})$", color = 'red')
+    plot_order(MN, disc_err_second[0], 2, label = r"$\mathcal{O}(N_{dof}^{-2})}$", color='blue')
 
     plt.yscale("log")
     plt.xscale("log")
@@ -161,8 +156,8 @@ def compare_discr(M, N, filename):
     plt.plot(MN, disc_err_second, label = "$e^r_l$ (2nd order)",color='blue',marker='o')
 
     # These need to be changed manually!
-    plot_order(MN, disc_err_first[0], 1, label = "$O(N_{dof}^{-1})$", color = 'red')
-    plot_order(MN, disc_err_second[0], 2, label = "$O(N_{dof}^{-2})}$", color='blue')
+    plot_order(MN, disc_err_first[0], 1, label = r"$\mathcal{O}(N_{dof}^{-1})$", color = 'red')
+    plot_order(MN, disc_err_second[0], 2, label = r"$\mathcal{O}(N_{dof}^{-2})}$", color='blue')
 
     plt.yscale("log")
     plt.xscale("log")
@@ -188,13 +183,12 @@ t = np.linspace(0, 0.2, 100)
 # ---| Compare firts and second order disc. of BCs. |--- # 
 N = 1000
 M = np.array([8,10,20,25,40,50,100,125,200,250,500])
-compare_discr(M,N,filename)
-
+#compare_discr(M,N,filename)
 
 # ---| h-refinement. |--- # 
 N = 1000
 M = np.array([8,10,20,25,40,50,100,125,200,250,500])
-#calc_error(M,N,filename,'h')
+#calc_error(M, N, filename, 'h')
 
 # ---| t-refinement. |--- #
 M = 1000
