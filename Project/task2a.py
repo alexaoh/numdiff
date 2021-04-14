@@ -4,24 +4,12 @@ from scipy.sparse import spdiags # Make sparse matrices with scipy.
 import numpy as np
 import numpy.linalg as la
 import pickle # To save the reference solution.
-
+from utilities import *
+'''
 def plot_order(Ndof, error_start, order, label, color):
     const = error_start/Ndof[0]**order
     plt.plot(1/Ndof, const*Ndof**order, label=label, color=color, linestyle='dashed')
-
-
-def disc_l2_norm(V):
-    """Discrete l2-norm of V."""
-    sqr = (lambda x: x**2) 
-    return np.sqrt(1/len(V)*sum(list(map(sqr, V))))
-
-def e_l(U, u):
-    """Relative error e_l.
-
-    U: Approximate numerical solution.
-    u: Analytical solution. 
-    """
-    return disc_l2_norm(u-U)/disc_l2_norm(u) # la.norm(u-U)/la.norm(u)
+'''
 
 initial = (lambda x: 2*np.pi*x - np.sin(2*np.pi*x))
 
@@ -131,13 +119,13 @@ def calc_error(M, N, filename, typ):
         disc_err_second[i] = e_l(sol_2[-1,:], uStar)      
     
     MN = M*N
-    Ndof = 1/MN
 
     plt.plot(MN, disc_err_first, label = "$e^r_l$ (BE)",color='red',marker='o')
     plt.plot(MN, disc_err_second, label = "$e^r_l$ (CN)",color='blue',marker='o')
 
-    plot_order(Ndof, disc_err_first[0], 1/2, label = "$O(N_{dof}^{-1/2})$", color = 'red')
-    plot_order(Ndof, disc_err_second[0], 1, label = "$O(N_{dof}^{-1})}$", color='blue')
+    # These need to be changed manually!
+    plot_order(MN, disc_err_first[0], 1/2, label = "$O(N_{dof}^{-1/2})$", color = 'red')
+    plot_order(MN, disc_err_second[0], 1, label = "$O(N_{dof}^{-1})}$", color='blue')
 
     plt.yscale("log")
     plt.xscale("log")
@@ -148,26 +136,30 @@ def calc_error(M, N, filename, typ):
     plt.show()
 
 
+# ====| Run code below. |==== #
+
 Mstar = Nstar = 1000
 filename = 'ref_sol.pk'
+# We use 2 order disc. of BC and CN for the reference solution.
 #save_ref_sol(Mstar, Nstar, 2, 1/2, filename) # Only needs to be run once, or if you change Mstar
 
 
-# h -refinement
+
+# ---| h-refinement. |--- # 
 N = 1000
 M = np.array([8,10,20,25,40,50,100,125,200,250,500])
 #calc_error(M,N,filename,'h')
 
-# t - refinement
+# ---| t-refinement. |--- #
 M = 1000
 #N = np.array([8,10,20,25,40,50,100,125,200,250,500])
 N = np.array([4,8,16,32,64,128,256])  #does not have to be divisible by Nstar
 #calc_error(M,N,filename,'t')  #why does the first order method give a much lower error at last point (N=500)?
 
-# r -refinement, here both M and N increases.
+# ---| r -refinement, here both M and N increases. |--- #
 M = np.array([8,10,20,25,40,50,100,125,200,250,500])
 N = np.array([8,10,20,25,40,50,100,125,200,250,500])
-calc_error(M,N,filename,'r')  #gives BE; Ndof^(-1/2) and CN; Ndof^(-1)
+#calc_error(M,N,filename,'r')  #gives BE; Ndof^(-1/2) and CN; Ndof^(-1)
 
 # r -refinement, keeping r fixed, r=40=M^2/N. Difficult to choose appropriate values
 M = np.array([20,25,40,50,100,125,200])
