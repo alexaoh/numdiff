@@ -18,10 +18,19 @@ class Task3:
         plot3d_sol(U, xv, yv, Uan = self.analytic_solution)
 
     def convergence_plot(self, varying = None, power1 = 1.5, power2 = 2.0, savename = False):
-        """Make convergence plot specified by which quantity is varying.
-        
-        FORKLAR MER OM HVILKE ARGUMENTER VARYING TAR!
-        """
+        """Make convergence plot specified by which quantity is varying."""
+        assert(varying == "Mx" or varying == "My" or varying == "Both")
+
+        # Add list for powers instead! :) Then complete!
+
+        # Assert that the savename variable is of the correct format.
+        if (varying == "Mx" or varying == "My") and savename:
+            assert(type(savename) is list)
+            assert(len(savename) == 4)
+        elif savename:
+            assert(isinstance(savename, str))
+
+        # These may be removed! (and switched out with something else in the if-statements below.)
         if varying == "Mx":
             self._varying = "Mx"
             self._constant_list = [20, 50, 100, 500]
@@ -38,7 +47,6 @@ class Task3:
         self._power2 = power2
 
         varying_list = 2 ** np.arange(1, np.log(maximum)/np.log(2)+1, dtype = int)
-        
         if self._varying == "Both":
             self._discrete_error = np.zeros(len(varying_list))
             for i in range(len(varying_list)):
@@ -51,7 +59,7 @@ class Task3:
             else: 
                 self.plot_plots(varying_list, varying_list)
         elif self._varying:
-            for constant in self._constant_list:
+            for j, constant in enumerate(self._constant_list):
                 self._discrete_error = np.zeros(len(varying_list))
                 for i, m in enumerate(varying_list):
                     if self._varying == "Mx":
@@ -61,8 +69,10 @@ class Task3:
 
                     analsol = self.analytic_solution(xv, yv)
                     self._discrete_error[i] = e_l(Usol, analsol)
-
-        self.plot_plots()
+                if savename:
+                    self.plot_plots(varying_list, constant, savename=savename[j])
+                else: 
+                    self.plot_plots(varying_list, constant)
 
     def analytic_solution(self, x, y):
         """Analytical solution to the 2D Laplace equation."""
@@ -137,74 +147,5 @@ class Task3:
                 plt.savefig(savename+".pdf")
             plt.show() 
     
-    
-    """    
-    def constant_Mx_convergence_plot(Mx, savename = False):
-        maximum = 2**11
-        My = 2 ** np.arange(1, np.log(maximum)/np.log(2)+1, dtype = int)
-        discrete_error = np.zeros(len(My))
-        
-        for i, m in enumerate(My):
-            
-            Usol, xv, yv = num_solution_Mx_My(Mx = Mx, My = m)
-            analsol = analytic_solution(xv, yv)
-
-            discrete_error[i] = e_l(Usol, analsol)
-
-        def plot_plots(savename = savename):
-            power = 1.5
-            power2 = 2.0
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            ax.set_xscale("log")
-            ax.set_yscale("log")
-            ax.plot(Mx*My, discrete_error, label=r"$e^r_\ell$", color = "blue", marker = "o", linewidth = 3)
-            plot_order(Mx*My, discrete_error[0], power, r"$\mathcal{O}$($h^{%s}$)" % str(power), "red")
-            plot_order(Mx*My, discrete_error[0], power2, r"$\mathcal{O}$($h^{%s}$)" % str(power2), "green")
-            ax.set_ylabel(r"Error $e^r_{(\cdot)}$")
-            ax.set_xlabel(r"$M_y \cdot M_y$")
-            fig.suptitle(r"$M_x = $"+str(Mx)+" constant")
-            plt.legend()
-            plt.grid() 
-            if savename:
-                plt.savefig(savename+".pdf")
-            plt.show() 
-
-        plot_plots()
-
-    def convergence_plot_both_varying(savename=False):
-        maximum = 2**10
-        My = Mx = 2 ** np.arange(1, np.log(maximum)/np.log(2)+1, dtype = int)
-        discrete_error = np.zeros(len(My))
-        
-        for i in range(len(My)):
-            Usol, xv, yv = num_solution_Mx_My(Mx = Mx[i], My = My[i])
-            analsol = analytic_solution(xv, yv)
-            discrete_error[i] = e_l(Usol, analsol)
-
-        def plot_plots(savename = savename):
-            power = 1.0
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            ax.set_xscale("log")
-            ax.set_yscale("log")
-            ax.plot(Mx*My, discrete_error, label=r"$e^r_\ell$", color = "blue", marker = "o", linewidth = 3)
-            plot_order(Mx*My, discrete_error[0], power, r"$\mathcal{O}$($h^{%s}$)" % str(power), "red")
-            ax.set_ylabel(r"Error $e^r_{(\cdot)}$")
-            ax.set_xlabel(r"$M_y \cdot M_y$")
-            fig.suptitle(r"$M_x$"+" and "+r"$M_y$"+" varying")
-            plt.legend()
-            plt.grid() 
-            if savename:
-                plt.savefig(savename+".pdf")
-            plt.show() 
-
-        plot_plots()
-
-
-
-#convergence_plot_both_varying()
-"""
-
 both = Task3()
-both.convergence_plot("Both", power1=1.0, power2=1.5)
+both.convergence_plot("My", power1=1.0, power2=1.5)
