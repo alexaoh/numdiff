@@ -119,7 +119,7 @@ def calc_error(M, N, filename, typ):
     plt.plot(MN, disc_err_second, label = "$e^r_l$ (CN)",color='blue',marker='o')
 
     # These need to be changed manually!
-    #plot_order(MN, disc_err_first[0], 1, label = r"$\mathcal{O}(N_{dof}^{-1})$", color = 'red')
+    plot_order(MN, disc_err_first[0], 1, label = r"$\mathcal{O}(N_{dof}^{-1})$", color = 'red')
     plot_order(MN, disc_err_second[0], 2, label = r"$\mathcal{O}(N_{dof}^{-2})}$", color='blue')
 
     plt.yscale("log")
@@ -190,11 +190,13 @@ N = 1000
 M = np.array([8,10,20,25,40,50,100,125,200,250,500])
 #calc_error(M, N, filename, 'h')
 
-# ---| t-refinement. |--- #
+# ---| k-refinement. |--- #
 M = 1000
 #N = np.array([8,10,20,25,40,50,100,125,200,250,500])
 N = np.array([4,8,16,32,64,128,256])  #does not have to be divisible by Nstar
-#calc_error(M,N,filename,'t')  #why does the first order method give a much lower error at last point (N=500)?
+#calc_error(M,N,filename,'t')  
+
+### Unsure if the refinements below should be included.
 
 # ---| r -refinement, here both M and N increases. |--- #
 M = np.array([8,10,20,25,40,50,100,125,200,250,500])
