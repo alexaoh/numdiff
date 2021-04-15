@@ -95,12 +95,13 @@ def plot_UMR_errors(save = False):
 
 def plot_UMR_solution(save = False):
     """Plot analytical solution and numerical solution using AMR."""
-    M = 500
+    M = 40
     x = np.linspace(0,1,M+2)
-    u = anal_solution(x)
+    x_an = np.linspace(0,1,500) # Plot the analytical solution on a smooth grid. 
+    u = anal_solution(x_an) 
     first_order_num = num_sol_UMR(x,M,1)
     second_order_num = num_sol_UMR(x,M,2)
-    plt.plot(x,u,label="An", color = "blue")
+    plt.plot(x_an,u,label="An", color = "blue")
     plt.plot(x, first_order_num, label = "First", linestyle = "dotted", color = "green")
     plt.plot(x, second_order_num, label = "Second", linestyle = "dotted", color = "red")
     plt.legend()
@@ -312,8 +313,8 @@ def plot_AMR_errors(save=False):
 #plot_UMR_solution()
 #plot_UMR_errors()
 
-plot_AMR_solution(num_sol_AMR_first)
-plot_AMR_solution(num_sol_AMR_second)
+#plot_AMR_solution(num_sol_AMR_first)
+#plot_AMR_solution(num_sol_AMR_second)
 
 #---plot errors---#
 M = 9
