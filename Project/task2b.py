@@ -6,25 +6,13 @@ Second order; Crank Nicolson
 """
 
 from plot_heat_eqn import *
+from utilities import *
 from scipy.sparse import spdiags # Make sparse matrices with scipy.
 from scipy.linalg import toeplitz, solve_toeplitz
 import numpy as np
 import numpy.linalg as la
 from scipy.interpolate import interp1d 
 from scipy.integrate import quad
-
-def disc_l2_norm(V):
-    """Discrete l2-norm of V."""
-    sqr = (lambda x: x**2) 
-    return np.sqrt(1/len(V)*sum(list(map(sqr, V))))
-
-def e_l(U, u):
-    """Relative error e_l.
-
-    U: Approximate numerical solution.
-    u: Analytical solution. 
-    """
-    return disc_l2_norm(u-U)/disc_l2_norm(u) # la.norm(u-U)/la.norm(u)
 
 
 def cont_L2_norm(v, t):
@@ -137,16 +125,17 @@ def plot_UMR(M,N,type): # type = 't', 'h' or 'r'-refinement
         cont_err_second[i] = e_L(interp1d(x, U_CN[time_index,:], kind = 'cubic'), anal_solution, t[time_index])
     
     MN = M*N    
-    Ndof = 1/(MN)
-    plt.plot(MN,cont_err_first, label=r"$e^r_{L_2}$ BE", color='green',marker='o', linewidth = 1.4)
-    plt.plot(MN,cont_err_second, label=r"$e^r_{L_2}$ CN",color='purple',marker='o', linewidth = 1.4)
-    plt.plot(MN, disc_err_first, label=r"$e^r_{l}$ BE", color='red',marker='o',linestyle="--", linewidth = 1)
-    plt.plot(MN, disc_err_second, label=r"$e^r_{l}$ CN",color='orange',marker='o',linestyle="--", linewidth = 1)
+     # These changes for different methods, change it manually!!
+    plot_order(MN, cont_err_first[0], 2, label = r"$\mathcal{O}(N_{dof}^{-2})$", color = "blue")
+    #plot_order(MN, cont_err_second[0], 2, label = r"$\mathcal{O}(N_{dof}^{-2})$", color = "blue")
+
+    plt.plot(MN,cont_err_first, label=r"$e^r_{L_2}$ (BE)", color='green',marker='o')#, linewidth = 1.4)
+    plt.plot(MN,cont_err_second, label=r"$e^r_{L_2}$ (CN)",color='purple',marker='o')#, linewidth = 1.4)
+    plt.plot(MN, disc_err_first, label=r"$e^r_{l}$ (BE)", color='red',marker='o',linestyle="--")#, linewidth = 1)
+    plt.plot(MN, disc_err_second, label=r"$e^r_{l}$ (CN)",color='orange',marker='o',linestyle="--")#, linewidth = 1)
     
-    # These changes for different methods, change it manually!!
-    #plt.plot(MN, (2e+3)*Ndof, label=r"O$(N_{dof}^{-1})$", linestyle='dashed', color='red')
-    plt.plot(MN, (1e+3)*Ndof**(2/3), label=r"O$(N_{dof}^{-2/3})$",linestyle='dashed', color='blue', linewidth = 1)
-    plt.plot(MN, (2e+1)*Ndof**(2/3),linestyle='dashed', color='blue', linewidth = 1)
+    
+    
     
     plt.xscale('log')
     plt.yscale('log')
@@ -159,7 +148,7 @@ def plot_UMR(M,N,type): # type = 't', 'h' or 'r'-refinement
 # h-refinement
 N = 1000
 M = np.array([8,16,32,64,128,256]) 
-#plot_UMR(M,N,'h')  # h-refinement, both methods are second order but BE flattens out because of big error in t
+plot_UMR(M,N,'h')  # h-refinement, both methods are second order but BE flattens out because of big error in t
 
 # t-refinement
 M = 1000
