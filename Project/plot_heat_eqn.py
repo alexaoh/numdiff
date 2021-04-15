@@ -12,7 +12,7 @@ def three_dim_plot(*, xv, tv, I, label):
     ax.plot_surface(xv, tv, I, cmap="seismic")
     ax.set_xlabel("$x$")
     ax.set_ylabel("$t$")
-    ax.set_zlabel("Intensiity")
+    ax.set_zlabel("$u(x,t)$")
     plt.show()
 
 def sub(*, x, I, t, L, t_index, label):
