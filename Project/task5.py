@@ -9,32 +9,15 @@ from scipy.interpolate import interp1d
 from scipy.integrate import quad
 from scipy.integrate import quadrature
 import matplotlib.pyplot as plt
+from utilities import *
 
-def plot_order(Ndof, error_start, order, label, color):
-    const = (error_start)**(1/order)*Ndof[0]
-    plt.plot(Ndof, (const*1/Ndof)**order, label=label, color=color, linestyle='dashed')
-
-def cont_L2_norm(v, left, right):
-    """Continuous L2 norm of v(x) between left and right. """
-    integrand = lambda x: v(x)**2
-    return np.sqrt(quad(integrand, left, right)[0])
-
-def e_L2(U, u, left, right):
-    """L2 error on the interval [left, right].
-    
-    U: Approximate numerical solution.
-    u: Function returning analytical solution. 
-    """
-    f = lambda x : u(x) - U(x)
-    err = cont_L2_norm(f, left, right)
-    return err
 
 class FEM_sol:
     """
     A class which represents the FEM solution.
     This is necesssary in order to incorporate the coefficeints
     in the solution function u_h(x).
-    """"
+    """
     def __init__(self, coeff, x_grid):
         self.coeff = coeff
         self.x_grid = x_grid
@@ -45,14 +28,13 @@ class FEM_sol:
                 break
             else:
                 index += 1
-
        
         left = self.coeff[index] * (self.x_grid[index + 1] - x)/(self.x_grid[index + 1] - self.x_grid[index])
         right = self.coeff[index + 1] * (x - self.x_grid[index])/(self.x_grid[index + 1] - self.x_grid[index]) 
         return left + right
 
 def FEM_solver_Dirichlet(BC, f, x):
-    '''General FEM solver with Dirichlet BC.'''
+    """General FEM solver with Dirichlet BC."""
     N = len(x)
     # Construct A
     A = np.zeros((N,N))
@@ -84,10 +66,6 @@ def FEM_solver_Dirichlet(BC, f, x):
 
     return u
 
-
-
-# b)
-
 def UFEM(N_list, BC, f, anal_sol, x_interval):
     '''Conducts FEM with uniform refinement in 1D.'''
     err_list = []
@@ -107,16 +85,17 @@ def UFEM(N_list, BC, f, anal_sol, x_interval):
         plt.legend()
         plt.show()
         '''
-        
-
-        err_list.append(e_L2(num_sol.uh, anal_sol, x[0], x[-1]))
+    
+        # Calculating error.
+        diff = lambda x : num_sol.uh(x) - anal_sol(x)
+        err = cont_L2_norm(diff, x[0], x[-1])
+        err_list.append(err)
 
     plt.plot(N_list, err_list, marker = 'o', label = "$||u - u_h||_{L_2}$")
     plot_order(np.array(N_list), err_list[0], 2, "$O(h^{-2})$", color = "red")
 
     plt.title("UFEM")
     plt.xlabel("$N$")
-    #plt.ylabel("$||u - u_h||_{L_2}$")
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()
@@ -125,12 +104,13 @@ def UFEM(N_list, BC, f, anal_sol, x_interval):
 
 # AFEM:
 def calc_cell_errors(U, u, x):
-    '''Calulculates the error for each cell by taking the L_2 norm.'''
+    """Calulculates the error for each cell by taking the L_2 norm. Used in AFEM."""
     n = len(x) - 1 # Number of cells
     cell_errors = np.zeros(n)
 
     for i in range(n):
-        cell_errors[i] = e_L2(U, u, x[i], x[i + 1])
+        diff = lambda x: U(x) - u(x)
+        cell_errors[i] = cont_L2_norm(diff, x[i], x[i + 1])
 
     return cell_errors
 
@@ -143,16 +123,24 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval):
     for i in range(steps):
         U = FEM_solver_Dirichlet(BC, f, x)
         U_interp = interp1d(x, U, kind = 'linear')
+        num_sol = FEM_sol(U, x)
 
+        cell_errors = calc_cell_errors(num_sol.uh, anal_sol, x)
+        
         '''
-        plt.plot(x, U_interp(x), label = "num", marker = 'o')
+        plt.plot(x, U_interp(x), label = "interp", marker = 'o')
+        x2 = np.linspace(x_interval[0], x_interval[1], 3*N)
+        for xi in x2:
+            plt.plot(xi, num_sol.uh(xi), marker = '.')
         plt.plot(x, anal_sol(x), label = "anal", linestyle = "dotted")
         plt.legend()
         plt.show()
         '''
-        cell_errors = calc_cell_errors(U_interp, anal_sol, x)
-        err = e_L2(U_interp, anal_sol, x[0], x[-1])
-
+    
+        # Calculating error.
+        diff = lambda x : num_sol.uh(x) - anal_sol(x)
+        err = cont_L2_norm(diff, x[0], x[-1])
+        
         N_list.append(len(x))
         err_list.append(err)
 
@@ -178,19 +166,20 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval):
         plt.show()
         '''
     plt.plot(N_list, err_list, marker = 'o', label = "$||u - u_h||_{L_2}$")
-    plot_order(np.array(N_list), err_list[0], 2, "$O(h^{-2})$", color = "red")
+    plot_order(np.array(N_list), err_list[0], 2, "$O(h^{2})$", color = "red")
 
     plt.title(str(steps) + '-step AFEM with ' + type + '-error and ' + r'$\alpha =$' + str(alpha))
     plt.xlabel("$N$")
-    #plt.ylabel("$e_{L_2}$")
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()
     plt.grid()
     plt.show()
 
+# ====| Run code below. Uncomment the FEM method you want to run.|==== #
+
 ## b)
-# UFEM
+#--- UFEM ---#
 anal_sol = lambda x: x**2
 f = lambda x: -2
 x_interval = [0,1]
@@ -198,19 +187,19 @@ BC = [0, 1]
 N_list = [2**i for i in range(3, 12)]
 #UFEM(N_list, BC, f, anal_sol, x_interval)
 
-# Average AFEM
+#--- Average AFEM ---#
 steps = 7
 alpha = 1
 N0 = 20
 #AFEM(N0, steps, alpha, 'avg', f, anal_sol, x_interval)
 
-# Maximum AFEM
+#--- Maximum AFEM ---#
 alpha = 0.7
 #AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
 
 
 ## c)
-#UFEM
+#––– UFEM –––#
 anal_sol = lambda x: np.exp(-100 * x**2)
 f = lambda x: - (40000*x**2 - 200) * np.exp(-100 * x**2)
 x_interval = [-1, 1]
@@ -218,18 +207,18 @@ BC = [np.exp(-100), np.exp(-100)]
 N_list = [2**i for i in range(3, 12)]
 #UFEM(N_list, BC, f, anal_sol, x_interval)
 
-# Average AFEM
+#––– Average AFEM –––#
 steps = 7
 alpha = 1
 N0 = 20
 #AFEM(N0, steps, alpha, 'avg', f, anal_sol, x_interval)
 
-#Maximum AFEM
+#––– Maximum AFEM –––#
 alpha = 0.7
 #AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
 
-## d)
-#UFEM
+## d) 
+#––– UFEM –––#
 anal_sol = lambda x: np.exp(-1000 * x**2)
 f = lambda x: - (4000000 * x**2 - 2000) * np.exp(-1000 * x**2)
 x_interval = [-1, 1]
@@ -237,7 +226,7 @@ BC = [np.exp(-1000), np.exp(-1000)]
 N_list = [2**i for i in range(3, 12)]
 #UFEM(N_list, BC, f, anal_sol, x_interval)
 
-# Average AFEM
+#––– Average AFEM –––#
 steps = 7
 alpha = 1
 N0 = 20
@@ -248,21 +237,21 @@ alpha = 0.7
 
 
 ## e)
-# UFEM
+#––– UFEM –––#
 anal_sol = lambda x: -x**(2/3) + 2*x
 f = lambda x: - 2/9 * x**(-4/3)
 x_interval = [0, 1]
 BC = [0, 1]
 N_list = [2**i for i in range(3, 12)]
-UFEM(N_list, BC, f, anal_sol, x_interval)
+#UFEM(N_list, BC, f, anal_sol, x_interval)
 
-# Average AFEM
+#––– Average AFEM –––#
 steps = 7
 alpha = 1
 N0 = 20
 #AFEM(N0, steps, alpha, 'avg', f, anal_sol, x_interval)
 
-# Maximum AFEM
+#––– Maximum AFEM –––#
 alpha = 0.7
 #AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
 
