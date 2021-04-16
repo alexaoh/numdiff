@@ -29,33 +29,27 @@ def e_L2(U, u, left, right):
     err = cont_L2_norm(f, left, right)
     return err
 
-def FEM_solver_equidistant(BC, f, x):
-    '''FEM solver which only works with equidistant grid x.'''
-    # Construction below assumes equidistant grid
-    N = len(x)
-    h = 1/(N-1)
-    
-    data = np.array([np.full(N - 2, -1), np.full(N - 2, 2), np.full(N -2, -1)])
-    diags = np.array([-1, 0, 1])
-    A = 1/h * spdiags(data, diags, N - 2, N - 2).toarray()
-    
-    # Construct rhs
+class FEM_sol:
+    """
+    A class which represents the FEM solution.
+    This is necesssary in order to incorporate the coefficeints
+    in the solution function u_h(x).
+    """"
+    def __init__(self, coeff, x_grid):
+        self.coeff = coeff
+        self.x_grid = x_grid
+    def uh(self, x):
+        index = 0
+        for i in range(len(self.x_grid) - 1): # Probably more effective with a bisection method.
+            if x <= self.x_grid[i + 1]:
+                break
+            else:
+                index += 1
 
-    rhs = np.zeros(N - 2)
-    for i in range(N - 2):
-        rhs[i] = h * f(x[i + 1])
-    
-    rhs[0] += 1/h * BC[0]
-    rhs[-1] += 1/h * BC[1]
-
-    u = la.solve(A, rhs)
-    u = np.hstack((np.array(BC[0]), u))
-    u = np.hstack((u, np.array(BC[1])))
-
-    return u
-
-
-
+       
+        left = self.coeff[index] * (self.x_grid[index + 1] - x)/(self.x_grid[index + 1] - self.x_grid[index])
+        right = self.coeff[index + 1] * (x - self.x_grid[index])/(self.x_grid[index + 1] - self.x_grid[index]) 
+        return left + right
 
 def FEM_solver_Dirichlet(BC, f, x):
     '''General FEM solver with Dirichlet BC.'''
@@ -102,13 +96,20 @@ def UFEM(N_list, BC, f, anal_sol, x_interval):
         x = np.linspace(x_interval[0], x_interval[1], N)
         U = FEM_solver_Dirichlet(BC, f, x)
         U_interp = interp1d(x, U, kind = 'linear')
+        num_sol = FEM_sol(U, x)
+      
         '''
-        plt.plot(x, U_interp(x), label = "num", marker = 'o')
+        plt.plot(x, U_interp(x), label = "interp", marker = 'o')
+        x2 = np.linspace(x_interval[0], x_interval[1], 3*N)
+        for xi in x2:
+            plt.plot(xi, num_sol.uh(xi), marker = '.')
         plt.plot(x, anal_sol(x), label = "anal", linestyle = "dotted")
         plt.legend()
         plt.show()
         '''
-        err_list.append(e_L2(U_interp, anal_sol, x[0], x[-1]))
+        
+
+        err_list.append(e_L2(num_sol.uh, anal_sol, x[0], x[-1]))
 
     plt.plot(N_list, err_list, marker = 'o', label = "$||u - u_h||_{L_2}$")
     plot_order(np.array(N_list), err_list[0], 2, "$O(h^{-2})$", color = "red")
@@ -248,7 +249,7 @@ alpha = 0.7
 
 ## e)
 # UFEM
-anal_sol = lambda x: x**(2/3)
+anal_sol = lambda x: -x**(2/3) + 2*x
 f = lambda x: - 2/9 * x**(-4/3)
 x_interval = [0, 1]
 BC = [0, 1]
