@@ -11,60 +11,52 @@ from plotting_utilities import plot3d_sol
 from utilities import *
 
 class Task3:
-          
-    def plot_solution(self, Mx, My):
+    def plot_solution(self, Mx = 50, My = 50):
         """Calculate numerical solution on specified grid, and plot together with analytical solution."""
-        U, xv, yv = self.num_solution_Mx_My(Mx = 50, My = 50)
+        U, xv, yv = self.num_solution_Mx_My(Mx = Mx, My = My)
         plot3d_sol(U, xv, yv, Uan = self.analytic_solution)
 
-    def convergence_plot(self, varying = None, power1 = 1.5, power2 = 2.0, savename = False):
+    def convergence_plot(self, varying, savename = False):
         """Make convergence plot specified by which quantity is varying."""
-        assert(varying == "Mx" or varying == "My" or varying == "Both")
-
-        # Add list for powers instead! :) Then complete!
+        assert(varying == "Mx" or varying == "My" or varying == "Both") 
+        self._colors = ["red", "green", "black", "orange"]
 
         # Assert that the savename variable is of the correct format.
         if (varying == "Mx" or varying == "My") and savename:
-            assert(type(savename) is list)
-            assert(len(savename) == 4)
+            assert(type(savename) is list and len(savename) == 4)
         elif savename:
             assert(isinstance(savename, str))
 
-        # These may be removed! (and switched out with something else in the if-statements below.)
         if varying == "Mx":
-            self._varying = "Mx"
-            self._constant_list = [20, 50, 100, 500]
-            maximum = 2**11
+            self._constant_list = [20, 50, 100, 500] # Constant values in plots. 
+            self._powers = [1.5, 1.7, 1.8, 1.9] # Powers used in convergence plots. 
+            maximum = 2**11 # Maximum limit of Mx.
         elif varying == "My":
-            self._varying = "My"
-            self._constant_list = [20, 50, 100, 500]
-            maximum = 2**11
+            self._constant_list = [20, 50, 100, 500] # Constant values in plots. 
+            self._powers = [1.0, 1.5, 1.7, 2.0] # Powers used in convergence plots. 
+            maximum = 2**11 # Maximum limit of My.
         elif varying == "Both":
-            self._varying = "Both"
-            maximum = 2**10
-
-        self._power1 = power1
-        self._power2 = power2
+            self._powers = [1.0] # Power used in convergence plot. 
+            maximum = 2**10 # Maximum limit of My and Mx. 
 
         varying_list = 2 ** np.arange(1, np.log(maximum)/np.log(2)+1, dtype = int)
-        if self._varying == "Both":
+        if varying == "Both":
             self._discrete_error = np.zeros(len(varying_list))
             for i in range(len(varying_list)):
                 Usol, xv, yv = self.num_solution_Mx_My(Mx = varying_list[i], My = varying_list[i])
                 analsol = self.analytic_solution(xv, yv)
                 self._discrete_error[i] = e_l(Usol, analsol)
             if savename:
-                assert(isinstance(savename, str))
                 self.plot_plots(varying_list, varying_list, savename=savename)
             else: 
                 self.plot_plots(varying_list, varying_list)
-        elif self._varying:
+        elif varying:
             for j, constant in enumerate(self._constant_list):
                 self._discrete_error = np.zeros(len(varying_list))
                 for i, m in enumerate(varying_list):
-                    if self._varying == "Mx":
+                    if varying == "Mx":
                         Usol, xv, yv = self.num_solution_Mx_My(Mx = m, My = constant)
-                    elif self._varying == "My":
+                    elif varying == "My":
                         Usol, xv, yv = self.num_solution_Mx_My(Mx = constant, My = m)
 
                     analsol = self.analytic_solution(xv, yv)
@@ -108,16 +100,13 @@ class Task3:
         # Add values out of loop-bound.  
         F[M2-1] = -(1/k**2)*np.sin(2*np.pi*point_counter*h)
 
-        
         # Solve linear system.  
         Usol = scipy.sparse.linalg.spsolve(A, F) 
         
         # Next, want to unpack into grids, for plotting.
         x = np.linspace(0, 1, Mx+2)
         y = np.linspace(0, 1, My+2) 
-
         xv, yv = np.meshgrid(x, y)
-    
         U = np.zeros_like(xv) # Grid for solution. Need to insert solution into this, including boundary conditions. 
 
         # Insert upper boundary condition last in U, since y increases "downwards" in yv. 
@@ -137,8 +126,8 @@ class Task3:
             ax.set_xscale("log")
             ax.set_yscale("log")
             ax.plot(Mx*My, self._discrete_error, label=r"$e^r_\ell$", color = "blue", marker = "o", linewidth = 3)
-            plot_order(Mx*My, self._discrete_error[0], self._power1, r"$\mathcal{O}$($h^{%s}$)" % str(self._power1), "red")
-            plot_order(Mx*My, self._discrete_error[0], self._power2, r"$\mathcal{O}$($h^{%s}$)" % str(self._power2), "green")
+            for i, p in enumerate(self._powers):
+                plot_order(Mx*My, self._discrete_error[0], p, r"$\mathcal{O}$($h^{%s}$)" % str(p), self._colors[i])
             ax.set_ylabel(r"Error $e^r_{(\cdot)}$")
             ax.set_xlabel(r"$M_x \cdot M_y$")
             plt.legend()
@@ -147,5 +136,8 @@ class Task3:
                 plt.savefig(savename+".pdf")
             plt.show() 
     
-both = Task3()
-both.convergence_plot("My", power1=1.0, power2=1.5)
+solution = Task3()
+#solution.plot_solution()
+#solution.convergence_plot("My", savename=["task3bMx20", "task3bMx50", "task3bMx100", "task3bMx500"])
+#solution.convergence_plot("Mx", savename=["task3bMy20", "task3bMy50", "task3bMy100", "task3bMy500"])
+#solution.convergence_plot("Both", savename="task3bBothVary")
