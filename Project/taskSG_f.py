@@ -4,13 +4,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import numpy.linalg as la
 from scipy.sparse import spdiags
-from scipy.integrate import simps
 from integrators import RK4_step, RKN34_step
+from scipy.integrate import quad, quadrature
+from scipy.interpolate import interp1d 
+
 
 u_0 = lambda x : np.sin(np.pi*x)**2*np.exp(-x**2)
 u_1 = lambda x : np.sin(np.pi*x)**4*np.exp(-x**2)
 
-def numeric_solution(x, t, method):
+def numeric_solution(M, N, method):
     """RK4 or RKN34 solution, solved with 'method' step.
     
     Input parameters:
@@ -20,83 +22,107 @@ def numeric_solution(x, t, method):
     """
     assert(callable(method))
        
-    N = len(t)-1
-    M = len(x)-2
-    k = t[1] - t[0]
-    h = x[1] - x[0]
+    #N = len(t)-1
+    #M = len(x)-2
+    x = np.linspace(-2,2,M+2)
+    #t = np.linspace(0,4,N+1)
+    t_i = 1 #the F-function is not dependent upon t, set t equal to 1 (random value)
+    h = 4/(M+1)
+    k = 4/N
+    #k = 4/N
+    #h = 4/(M+1)
     
     data = np.array([np.full(M, 1), np.full(M, -2), np.full(M, 1)])
     diags = np.array([-1, 0, 1])
     Ah = spdiags(data, diags, M, M).toarray()*1/h**2
     
-    g = lambda t, v : np.concatenate(([-np.sin(v[0])],-np.sin(v[1:-1]),[-np.sin(v[-1])])) #zero as B.C
+    #g = lambda v : np.concatenate(([-np.sin(v[0])],-np.sin(v[1:-1]),[-np.sin(v[-1])])) #zero as B.C
     F = None
     if method==RK4_step:
-        F = lambda t, y : np.array([y[1], Ah @ y[0] + g(t,y[0])])
+        F = lambda t, y : np.array([y[1], Ah @ y[0] - np.sin(y[0])])
     elif method == RKN34_step:
-        F = lambda t, v : Ah @ v + g(t,v)
+        F = lambda t, v : Ah @ v - np.sin(v)
     assert(callable(F))
     
-    Y = np.zeros((N+1,2,M))
+    Y = np.zeros((N+1,2,M))  
     #Initial conditions
     Y[0, 0, :] = u_0(x[1:-1])
     Y[0, 1, :] = u_1(x[1:-1])
     
     for i in range(N):
-        Y[i+1,:,:] = method(k, t[i], Y[i,:,:], F)
+        Y[i+1,:,:] = method(k, t_i, Y[i,:,:], F)
     
-    Usol = Y[:,0,:]
+    
+    U = Y[-1,:,:]
+    zeros = np.zeros(2)
+    U = np.insert(U,0,zeros,axis=1)
+    U = np.column_stack((U,zeros))
     
     #Insert B.C
-    Usol = np.insert(Usol,0,np.zeros_like(t),axis=1)
-    Usol = np.column_stack((Usol,np.zeros_like(t)))
+    #zeros = np.full(N+1,0)
+    #Usol = np.insert(Usol,0,zeros,axis=1)
+    #Usol = np.column_stack((Usol,zeros))
 
-    return Usol
+    return U #Y[-1,:,:] #Only need last time-step
+
+def calc_E(x,u,u_t):
+    h = x[1] - x[0]
+    M = len(x)-2
+    
+    data = np.array([np.full(M+2, -1), np.full(M+2, 1)])
+    diags = np.array([-1, 1])
+    Bh = spdiags(data, diags, M+2, M+2).toarray()/(2*h)
+    boundary = np.array([3,-4,1])/(2*h)
+    Bh[0,:3] = -boundary; Bh[-1,-3:] = np.flip(boundary)
+    
+    """Alt. calculation of u_x; (more compact, maybe faster than making the matrix for then to do matrix mult.)
+    U_x = np.zeros(M+2)
+    U_x[0] = (-3*U[0,0] + 4*U[0,1] - U[0,2])/(2*h)
+    U_x[1:-1] = (U[0,2:]-U[0,:-2])/(2*h)
+    U_x[-1] = (U[0,-3]-4*U[0,-2] + 3*U[0,-1])/(2*h)"""
+    
+    E_x_list = -(1/2)*(u_t**2 + (Bh @ u)**2) + np.cos(u)
+    interp_E_x = interp1d(x,E_x_list,kind='cubic')
+    return quad(interp_E_x,x[0],x[-1],epsabs=2e-6)[0]
 
 N = 400
 M = int(0.7*N)
-T = 4
-
+#T = 4
+#x = np.linspace(-2,2,M+2)
+#t = np.linspace(0,T,N+1)
 x = np.linspace(-2,2,M+2)
-t = np.linspace(0,T,N+1)
 
-U = numeric_solution(x, t, RK4_step)
-V = numeric_solution(x, t, RKN34_step)
+U = numeric_solution(M, N, RK4_step)
+#V = numeric_solution(M, N, RKN34_step)
 
-plt.plot(x,U[-1,:], label = "RK4")
-plt.plot(x,V[-1,:],label='RKN34')
-plt.legend()
-plt.show()
+#plt.plot(x,U[0], label = "RK4")
+#plt.legend()
+#plt.show()
 
-def energy(x,t,U,i):
-    """Calculates energy for a given time t[i]"""
-    u_t, u_x = np.gradient(U,t,x,edge_order=2)
-    y = 0.5*u_t[i,:]**2 + 0.5*u_x[i,:]**2 + np.cos(U[i,:])
-    E = simps(y,x)
-    return E 
-
-def energy_0():
-    u_0_x = lambda x : np.exp(-x**2)*(np.pi*np.sin(2*np.pi*x) - 2*x*np.sin(np.pi*x)**2)  #= u_x(x,0)
-    M = 1000
-    x = np.linspace(-2,2,M+2)
-    y = 0.5*u_1(x)**2 + 0.5*u_0_x(x)**2 + np.cos(u_0(x))
-    return simps(y,x)
-
-#Are we supposed to do some sort of refinement here? For instance h,t-refinement.
-def energy_refinement(method):
-    #N = np.array([40,80,160,320])
-    N = np.linspace(100,600,30,dtype=int)  
-    M = N*0.7
-    M = M.astype(int)
-    energy_diff = np.zeros(len(N))
-    E_0 = energy_0()
-    for i in range(len(N)):
-        x = np.linspace(-2,2,M[i]+2)
-        t = np.linspace(0,4,N[i]+1)
-        U = numeric_solution(x,t,method)
-        energy_diff[i] = np.abs(energy(x,t,U,-1)-E_0)/E_0
+def plot_order(Ndof, error_start, order, label, color):
+    """Plots Ndof^{-order} from a starting point."""
+    const = (error_start)**(1/order)*Ndof[0]
+    plt.plot(Ndof, (const*1/Ndof)**order, label=label, color=color, linestyle='dashed')
     
-    plt.plot(M*N,energy_diff)
+#What type of refinement are we supposed to do?
+def energy_refinement(method):
+    M = np.array([40,80,160,320,500])
+    N = 1200
+    #N = np.linspace(100,600,30,dtype=int)  
+    #M = N*0.7
+    #M = M.astype(int)
+    energy_diff = np.zeros(len(M))
+    for i in range(len(M)):
+        x = np.linspace(-2,2,M[i]+2)
+        #t = np.linspace(0,4,N[i]+1)
+        U = numeric_solution(M[i],N,method)
+        E_0 = calc_E(x,u_0(x),u_1(x))
+        E_end = calc_E(x,U[0],U[1])
+        energy_diff[i] = np.abs(E_end - E_0)/E_0
+    
+    Ndof = (M*N)
+    plt.plot(Ndof,energy_diff)
+    plot_order(Ndof,energy_diff[0],2,"O(h^2)",'red')
     plt.xscale('log')
     plt.yscale('log')
     plt.show()

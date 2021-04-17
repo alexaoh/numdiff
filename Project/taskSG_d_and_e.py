@@ -60,7 +60,7 @@ def num_solution(x, t, method):
     
     Usol = Y[:,0,:]
     
-    #Insert B.C
+    #Insert B.C ObsObs!! Kan hende det er dumt å tvinge B.C inn, la heller systemet evolve av seg selv, og ta med hele griden!
     Usol = np.insert(Usol,0,f_1(x[0],t),axis=1)
     Usol = np.column_stack((Usol,f_2(x[-1],t)))
 
