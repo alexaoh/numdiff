@@ -6,8 +6,6 @@ from scipy.linalg import toeplitz, solve_toeplitz
 import numpy as np
 import numpy.linalg as la
 from scipy.interpolate import interp1d 
-from scipy.integrate import quad
-from scipy.integrate import quadrature
 import matplotlib.pyplot as plt
 from utilities import *
 
@@ -33,6 +31,12 @@ class FEM_sol:
         right = self.coeff[index + 1] * (x - self.x_grid[index])/(self.x_grid[index + 1] - self.x_grid[index]) 
         return left + right
 
+def gauss(deg, f, a, b):
+    """Performs Gaussian quadrature on f over the interval [a,b] with deg sample points/weights."""
+    [x, w] = np.polynomial.legendre.leggauss(deg)
+    Q = 0.5*(b - a)*sum(w*f(0.5*(b - a)*x + 0.5*(b + a)))
+    return Q
+
 def FEM_solver_Dirichlet(BC, f, x):
     """General FEM solver with Dirichlet BC."""
     N = len(x)
@@ -46,7 +50,7 @@ def FEM_solver_Dirichlet(BC, f, x):
         # Functions to do Gaussian quadrature on:
         v1 = lambda y: (x[i + 1] - y) * f(y)
         v2 = lambda z: (z -x[i]) * f(z)
-        rhs[i:(i+2)] += 1/(x[i + 1] - x[i]) * np.array([quadrature(v1, x[i], x[i + 1])[0], quadrature(v2, x[i], x[i + 1])[0]])
+        rhs[i:(i+2)] += 1/(x[i + 1] - x[i]) * np.array([gauss(5, v1, x[i], x[i +1]), gauss(5, v2, x[i], x[i + 1])])
 
     #This could prabably be coded more efficiently
     BC_vec = np.zeros(N)
@@ -243,7 +247,7 @@ f = lambda x: - 2/9 * x**(-4/3)
 x_interval = [0, 1]
 BC = [0, 1]
 N_list = [2**i for i in range(3, 12)]
-#UFEM(N_list, BC, f, anal_sol, x_interval)
+UFEM(N_list, BC, f, anal_sol, x_interval)
 
 #––– Average AFEM –––#
 steps = 7
