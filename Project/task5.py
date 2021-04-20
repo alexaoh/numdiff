@@ -70,7 +70,7 @@ def FEM_solver_Dirichlet(BC, f, x):
 
     return u
 
-def UFEM(N_list, BC, f, anal_sol, x_interval):
+def UFEM(N_list, BC, f, anal_sol, x_interval, savename = False):
     '''Conducts FEM with uniform refinement in 1D.'''
     err_list = []
 
@@ -92,11 +92,13 @@ def UFEM(N_list, BC, f, anal_sol, x_interval):
     
         # Calculating error.
         diff = lambda x : num_sol.uh(x) - anal_sol(x)
+        #diff = lambda x : U_interp(x) - anal_sol(x)
         err = cont_L2_norm(diff, x[0], x[-1])
         err_list.append(err)
 
     plt.plot(N_list, err_list, marker = 'o', label = "$||u - u_h||_{L_2}$")
-    plot_order(np.array(N_list), err_list[0], 2, "$O(h^{-2})$", color = "red")
+    plot_order(np.array(N_list), err_list[0], 2, "$O(h^{2})$", color = "red")
+    plot_order(np.array(N_list), err_list[0], 1, "$O(h)$", color = "green")
 
     plt.title("UFEM")
     plt.xlabel("$N$")
@@ -104,6 +106,8 @@ def UFEM(N_list, BC, f, anal_sol, x_interval):
     plt.yscale("log")
     plt.legend()
     plt.grid()
+    if savename:
+        plt.savefig(savename + ".pdf")
     plt.show()
 
 # AFEM:
@@ -118,7 +122,7 @@ def calc_cell_errors(U, u, x):
 
     return cell_errors
 
-def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval):
+def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval, savename = False):
     '''Conducts FEM with adaptive refinement in 1D steps times.'''
     err_list = []
     N_list = []
@@ -178,86 +182,75 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval):
     plt.yscale("log")
     plt.legend()
     plt.grid()
+    if savename:
+        plt.savefig(savename + ".pdf")
     plt.show()
+
+def plot_and_save(anal_sol, f, BC, N_list, N0, steps, task_name):
+    """General method for performing UFEM and AFEM and saving the resulting plots for all tasks."""
+    # UFEM
+    UFEM(N_list, BC, f, anal_sol, x_interval, task_name + "_UFEM")
+
+    # Average AFEM
+    alpha = 1
+    AFEM(N0, steps, alpha, 'avg', f, anal_sol, x_interval, task_name + "_avgAFEM")
+
+    # Maximum AFEM 
+    alpha = 0.7
+    AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval, task_name + "_maxAFEM")
+
+
 
 # ====| Run code below. Uncomment the FEM method you want to run.|==== #
 
 ## b)
-#--- UFEM ---#
 anal_sol = lambda x: x**2
 f = lambda x: -2
 x_interval = [0,1]
-BC = [0, 1]
+BC = [0, 1] 
 N_list = [2**i for i in range(3, 12)]
-#UFEM(N_list, BC, f, anal_sol, x_interval)
-
-#--- Average AFEM ---#
+# For AFEM:
 steps = 7
-alpha = 1
 N0 = 20
-#AFEM(N0, steps, alpha, 'avg', f, anal_sol, x_interval)
-
-#--- Maximum AFEM ---#
-alpha = 0.7
-#AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
+#plot_and_save(anal_sol, f, BC, N_list, N0, steps, "5b")
 
 
 ## c)
-#––– UFEM –––#
 anal_sol = lambda x: np.exp(-100 * x**2)
 f = lambda x: - (40000*x**2 - 200) * np.exp(-100 * x**2)
 x_interval = [-1, 1]
 BC = [np.exp(-100), np.exp(-100)]
 N_list = [2**i for i in range(3, 12)]
-#UFEM(N_list, BC, f, anal_sol, x_interval)
-
-#––– Average AFEM –––#
+# For AFEM:
 steps = 7
-alpha = 1
 N0 = 20
-#AFEM(N0, steps, alpha, 'avg', f, anal_sol, x_interval)
+#plot_and_save(anal_sol, f, BC, N_list, N0, steps, "5c")
 
-#––– Maximum AFEM –––#
-alpha = 0.7
-#AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
 
 ## d) 
-#––– UFEM –––#
 anal_sol = lambda x: np.exp(-1000 * x**2)
 f = lambda x: - (4000000 * x**2 - 2000) * np.exp(-1000 * x**2)
 x_interval = [-1, 1]
 BC = [np.exp(-1000), np.exp(-1000)]
 N_list = [2**i for i in range(3, 12)]
-#UFEM(N_list, BC, f, anal_sol, x_interval)
-
-#––– Average AFEM –––#
+# For AFEM:
 steps = 7
-alpha = 1
 N0 = 20
-#AFEM(N0, steps, alpha, 'avg', f, anal_sol, x_interval)
-# Maximum AFEM
-alpha = 0.7
-#AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
+#plot_and_save(anal_sol, f, BC, N_list, N0, steps, "5d")
+
 
 
 ## e)
-#––– UFEM –––#
 anal_sol = lambda x: -x**(2/3) + 2*x
 f = lambda x: - 2/9 * x**(-4/3)
 x_interval = [0, 1]
 BC = [0, 1]
 N_list = [2**i for i in range(3, 12)]
-UFEM(N_list, BC, f, anal_sol, x_interval)
-
-#––– Average AFEM –––#
+# For AFEM:
 steps = 7
-alpha = 1
 N0 = 20
-#AFEM(N0, steps, alpha, 'avg', f, anal_sol, x_interval)
+#plot_and_save(anal_sol, f, BC, N_list, N0, steps, "5e")
 
-#––– Maximum AFEM –––#
-alpha = 0.7
-#AFEM(N0, steps, alpha, 'max', f, anal_sol, x_interval)
 
 
 
