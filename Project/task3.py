@@ -29,11 +29,11 @@ class Task3:
             assert(isinstance(savename, str))
 
         if varying == "Mx":
-            self._constant_list = [20, 50, 100, 500] # Constant values in plots. 
-            maximum = 2**11 # Maximum limit of Mx.
+            self._constant_list = [10, 100, pow(10, 3), pow(10, 4)] # Constant values in plots. 
+            maximum = 2**7 # Maximum limit of Mx.
         elif varying == "My":
-            self._constant_list = [20, 50, 100, 500] # Constant values in plots. 
-            maximum = 2**11 # Maximum limit of My.
+            self._constant_list = [10, 100, pow(10, 3), pow(10, 4)] # Constant values in plots. 
+            maximum = 2**7 # Maximum limit of My.
         elif varying == "Both":
             maximum = 2**10 # Maximum limit of My and Mx. 
             self._powers = [1] # Power used in the convergence plot. 
@@ -41,8 +41,8 @@ class Task3:
         varying_list = 2 ** np.arange(1, np.log(maximum)/np.log(2)+1, dtype = int)
         if varying == "Both":
             self._discrete_error = np.zeros(len(varying_list))
-            for i in range(len(varying_list)):
-                Usol, xv, yv = self.num_solution_Mx_My(Mx = varying_list[i], My = varying_list[i])
+            for i, m in enumerate(varying_list):
+                Usol, xv, yv = self.num_solution_Mx_My(Mx = m, My = m)
                 analsol = self.analytic_solution(xv, yv)
                 self._discrete_error[i] = e_l(Usol, analsol)
             if savename:
