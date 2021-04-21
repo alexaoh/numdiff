@@ -78,11 +78,10 @@ def plot_UMR_errors(save = False):
     """Convergence plot from UMR."""
     plt.plot(M_list,e_2_cont,label=r"$e^r_{L_2}$ second", color = "black",marker='o')
     plt.plot(M_list,e_1_cont,label=r"$e^r_{L_2}$ first", color = "green",marker='o')
-    plt.plot(M_list,e_1_disc,label=r"$e^r_{l}$ first", color = "red",marker='o',linestyle = "--")
-    plt.plot(M_list,e_2_disc,label=r"$e^r_l$ second", color = "blue",marker='o',linestyle = "--")
-    plt.plot(M_list,7*h_list,label=r"$\mathcal{O}(h)$",linestyle='dashed', color = "red")
-    plt.plot(M_list,10*h_list**2,label=r"$\mathcal{O}(h^2)$",linestyle='dashed', color = "blue")
-    
+    plt.plot(M_list,e_1_disc,label=r"$e^r_{\ell}$ first", color = "red",marker='o',linestyle = "--")
+    plt.plot(M_list,e_2_disc,label=r"$e^r_{\ell}$ second", color = "blue",marker='o',linestyle = "--")
+    plot_order(M_list, e_1_disc[0], 1, r"$\mathcal{O}(h)$", 'red')
+    plot_order(M_list, e_2_disc[0], 2, r"$\mathcal{O}(h^2)$", 'blue')
     plt.ylabel(r"Error $e^r_{(\cdot)}$")
     plt.xlabel("Number of points $M$")
     plt.yscale('log')
@@ -241,7 +240,7 @@ def plot_AMR_solution(num_solver, save = False):
     assert(callable(num_solver))
     M = 10
     x = np.linspace(0, 1, M+2)
-    steps = 7
+    steps = 15
     U, X, _, _, _= AMR(x,steps,num_solver)
 
     # For colors in plot. 
@@ -252,12 +251,12 @@ def plot_AMR_solution(num_solver, save = False):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.set_prop_cycle(color=colors)
-    ax.plot(X[-1],anal_solution(X[-1]),label="An",color = "black", linewidth = 2.0)
+    x_an = np.linspace(0, 1, 1000)
+    ax.plot(x_an,anal_solution(x_an),label="An",color = "black", linewidth = 2.0)
 
-    for i in range(0,steps+1):
+    for i in range(0,steps+1, 5):
         ax.plot(X[i],U[i],label=str(i), linestyle = "dashed", linewidth = 2.0)
 
-    
     plt.legend()
     if save:
         if "first" in num_solver.__name__:
@@ -290,9 +289,9 @@ def plot_bar_error(X,U,start,stop):
 def plot_AMR_errors(save=False):
     """Convergence plot from AMR."""
     h = 1/(M_2+1)
-    plt.plot(M_1, disc_error_1, label="$e_l^r$ (3 point stencil)",color='red',marker='o',linewidth=2)
+    plt.plot(M_1, disc_error_1, label="$e_\ell^r$ (3 point stencil)",color='red',marker='o',linewidth=2)
     plt.plot(M_1, cont_error_1, label="$e_L^r$ (3 point stencil)",color='red',linestyle="--",marker='o',linewidth=2)
-    plt.plot(M_2, disc_error_2, label="$e_l^r$ (4 point stencil)",color='blue',marker='o',linewidth=2)
+    plt.plot(M_2, disc_error_2, label="$e_\ell^r$ (4 point stencil)",color='blue',marker='o',linewidth=2)
     plt.plot(M_2, cont_error_2, label="$e_L^r$ (4 point stencil)",color='blue',linestyle="--",marker='o',linewidth=2)
     plot_order(M_1, disc_error_1[0], 1, r"$\mathcal{O}(h)$", 'green')
     plot_order(M_2, disc_error_2[0], 2, r"$\mathcal{O}(h^2)$", 'black')
@@ -324,6 +323,6 @@ steps = 16
 U_1, X_1, disc_error_1, cont_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
 U_2, X_2, disc_error_2, cont_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second)
 
-#plot_AMR_errors()
+#plot_AMR_errors(save = True)
 
 #plot_bar_error(X_1,U_1,0,steps)
