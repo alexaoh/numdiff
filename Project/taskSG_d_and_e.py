@@ -76,7 +76,7 @@ plot3d_sol_part2(x,t,U,analytical_solution)
 
 
 def refinement(M,N,method,savename=False):
-    """Preforms h- or t-refinement and plots the result."""
+    """Performs h- or t-refinement and plots the result."""
     T = 5
     if np.ndim(M) == 0:
         M = np.ones_like(N)*M
