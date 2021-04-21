@@ -29,7 +29,7 @@ def plot3d_sol(U, xv, yv, Uan = False, savename = False):
     plt.show()
 
 def plot3d_sol_2b(U, x, t, Uan = False, savename = False):
-    """Plot numerical solution (and optionally analytical) for task 3: 2D Laplace. """
+    """Plot numerical solution (and optionally analytical) for task 2b: Heat equation. """
     # Taken from three_dim_plot and heavily modified later (could be added to utilities or something in the end).
     fig = plt.figure()
     ax = fig.gca(projection="3d")
