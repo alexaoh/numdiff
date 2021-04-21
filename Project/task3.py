@@ -20,6 +20,7 @@ class Task3:
         """Make convergence plot specified by which quantity is varying."""
         assert(varying == "Mx" or varying == "My" or varying == "Both") 
         self._colors = ["red", "green", "black", "orange"]
+        self._powers = [2] # Power used in the convergence plot. 
 
         # Assert that the savename variable is of the correct format.
         if (varying == "Mx" or varying == "My") and savename:
@@ -29,15 +30,13 @@ class Task3:
 
         if varying == "Mx":
             self._constant_list = [20, 50, 100, 500] # Constant values in plots. 
-            self._powers = [1.5, 1.7, 1.8, 1.9] # Powers used in convergence plots. 
             maximum = 2**11 # Maximum limit of Mx.
         elif varying == "My":
             self._constant_list = [20, 50, 100, 500] # Constant values in plots. 
-            self._powers = [1.0, 1.5, 1.7, 2.0] # Powers used in convergence plots. 
             maximum = 2**11 # Maximum limit of My.
         elif varying == "Both":
-            self._powers = [1.0] # Power used in convergence plot. 
             maximum = 2**10 # Maximum limit of My and Mx. 
+            self._powers = [1] # Power used in the convergence plot. 
 
         varying_list = 2 ** np.arange(1, np.log(maximum)/np.log(2)+1, dtype = int)
         if varying == "Both":
@@ -126,8 +125,8 @@ class Task3:
             ax.set_xscale("log")
             ax.set_yscale("log")
             ax.plot(Mx*My, self._discrete_error, label=r"$e^r_\ell$", color = "blue", marker = "o", linewidth = 3)
-            for i, p in enumerate(self._powers):
-                plot_order(Mx*My, self._discrete_error[0], p, r"$\mathcal{O}$($h^{%s}$)" % str(p), self._colors[i])
+            for i, p in enumerate(self._powers): # If one wants to plot several orders. 
+                plot_order(Mx*My, self._discrete_error[0], p, r"$\mathcal{O}(N_{dof}^{-%s})$)" % str(p), self._colors[i])
             ax.set_ylabel(r"Error $e^r_{(\cdot)}$")
             ax.set_xlabel(r"$M_x \cdot M_y$")
             plt.legend()
@@ -138,6 +137,6 @@ class Task3:
     
 solution = Task3()
 #solution.plot_solution()
-#solution.convergence_plot("My", savename=["task3bMx20", "task3bMx50", "task3bMx100", "task3bMx500"])
 #solution.convergence_plot("Mx", savename=["task3bMy20", "task3bMy50", "task3bMy100", "task3bMy500"])
+#solution.convergence_plot("My", savename=["task3bMx20", "task3bMx50", "task3bMx100", "task3bMx500"])
 #solution.convergence_plot("Both", savename="task3bBothVary")
