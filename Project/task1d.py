@@ -49,7 +49,7 @@ def num_sol_UMR(x,M,order): # order = 1 or 2.
     return Usol
 
 #----------UMR--------------
-M_list = np.array([2**i for i in range(3,11)])
+M_list = 2**np.arange(3,11,dtype=int)
 h_list = 1/(M_list+1)
 
 e_1_disc = np.zeros(len(M_list))
