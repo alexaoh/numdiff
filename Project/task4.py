@@ -42,7 +42,7 @@ def theta_method_kdv(M,N,T,theta,init):
     Q = spdiags(data, diags, M+1, M+1)
     
     lhs = identity(M+1) - theta*k*Q
-    matrix = np.identity(M+1) + (1-theta)*k*Q.toarray()
+    matrix = identity(M+1) + (1-theta)*k*Q
     for n in range(N):
         rhs = matrix @ U[n,:]
         U[n+1,:] = spsolve(lhs,rhs)
