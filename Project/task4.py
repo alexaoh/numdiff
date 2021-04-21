@@ -57,7 +57,7 @@ def plot3d_sol(M,N,T,theta,init,Uan = False, savename = False):
 
     fig = plt.figure()
     ax = fig.gca(projection="3d")
-    ax.view_init(azim=-80, elev=20)
+    ax.view_init(azim=-100, elev=10)
     surface = ax.plot_surface(xv, tv, U, cmap="seismic") 
     ax.set_xlabel("$x$")
     ax.set_ylabel("$t$")
