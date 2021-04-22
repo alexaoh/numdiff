@@ -80,13 +80,8 @@ U = num_solution(x, t, RK4_step)
 
 
 def refinement(M,N,method,savename=False):
-<<<<<<< HEAD
-    """Preforms h- or t-refinement and plots the result."""
-    T = 1
-=======
     """Performs h- or t-refinement and plots the result."""
     T = 5
->>>>>>> refs/remotes/origin/part2
     if np.ndim(M) == 0:
         M = np.ones_like(N)*M
     elif np.ndim(N) == 0:
