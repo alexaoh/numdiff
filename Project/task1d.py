@@ -16,14 +16,15 @@ def anal_solution(x):
     """Manufactured solution of the Poisson equation with Dirichlet BC."""
     return np.exp(-(1/epsilon)*(x-0.5)**2)
 
-def num_sol_UMR(x,M,order): # order = 1 or 2.
+def num_sol_UMR(x,order): # order = 1 or 2.
     """First order numerical solution of the Possion equation with Dirichlet B.C.,
     given by the manufactured solution. Using a forward difference scheme. 
 
     The parameter 'order' can take values 1 or 2. 
     """
+    M = len(x)-2
+    h = np.diff(x)[0]
     assert(order == 1 or order == 2)
-    h = 1/(M+1)
 
     # Construct Dirichlet boundary condition from manuactured solution.
     alpha = anal_solution(x[0])
@@ -49,33 +50,32 @@ def num_sol_UMR(x,M,order): # order = 1 or 2.
     return Usol
 
 #----------UMR--------------
-M_list = 2**np.arange(3,11,dtype=int)
-h_list = 1/(M_list+1)
-
-e_1_disc = np.zeros(len(M_list))
-e_2_disc = np.zeros(len(M_list))
-e_1_cont = np.zeros(len(M_list))
-e_2_cont = np.zeros(len(M_list))
-
-for i, m in enumerate(M_list):
-    x = np.linspace(0,1,m+2)
-    u = anal_solution(x)
-    first_order_num = num_sol_UMR(x,m,1)
-    second_order_num = num_sol_UMR(x,m,2)
-
-    # Discrete norms. 
-    e_1_disc[i] = e_l(first_order_num, u)
-    e_2_disc[i] = e_l(second_order_num, u)
-    
-    # Continuous norms. 
-    interpU_first = interp1d(x, first_order_num, kind = 'cubic')
-    interpU_second = interp1d(x, second_order_num, kind = 'cubic')
-
-    e_1_cont[i] = e_L(interpU_first, anal_solution, x[0], x[-1])
-    e_2_cont[i] = e_L(interpU_second, anal_solution, x[0], x[-1])
-
 def plot_UMR_errors(save = False):
     """Convergence plot from UMR."""
+    M_list = 2**np.arange(3,11,dtype=int)
+
+    e_1_disc = np.zeros(len(M_list))
+    e_2_disc = np.zeros(len(M_list))
+    e_1_cont = np.zeros(len(M_list))
+    e_2_cont = np.zeros(len(M_list))
+
+    for i, m in enumerate(M_list):
+        x = np.linspace(0,1,m+2)
+        u = anal_solution(x)
+        first_order_num = num_sol_UMR(x,1)
+        second_order_num = num_sol_UMR(x,2)
+
+        # Discrete norms. 
+        e_1_disc[i] = e_l(first_order_num, u)
+        e_2_disc[i] = e_l(second_order_num, u)
+        
+        # Continuous norms. 
+        interpU_first = interp1d(x, first_order_num, kind = 'cubic')
+        interpU_second = interp1d(x, second_order_num, kind = 'cubic')
+
+        e_1_cont[i] = e_L(interpU_first, anal_solution, x[0], x[-1])
+        e_2_cont[i] = e_L(interpU_second, anal_solution, x[0], x[-1])
+        
     plt.plot(M_list,e_2_cont,label=r"$e^r_{L_2}$ second", color = "black",marker='o')
     plt.plot(M_list,e_1_cont,label=r"$e^r_{L_2}$ first", color = "green",marker='o')
     plt.plot(M_list,e_1_disc,label=r"$e^r_{\ell}$ first", color = "red",marker='o',linestyle = "--")
@@ -98,8 +98,8 @@ def plot_UMR_solution(save = False):
     x = np.linspace(0,1,M+2)
     x_an = np.linspace(0,1,500) # Plot the analytical solution on a smooth grid. 
     u = anal_solution(x_an) 
-    first_order_num = num_sol_UMR(x,M,1)
-    second_order_num = num_sol_UMR(x,M,2)
+    first_order_num = num_sol_UMR(x,1)
+    second_order_num = num_sol_UMR(x,2)
     plt.plot(x_an,u,label="An", color = "blue")
     plt.plot(x, first_order_num, label = "First", linestyle = "dotted", color = "green")
     plt.plot(x, second_order_num, label = "Second", linestyle = "dotted", color = "red")
@@ -288,7 +288,6 @@ def plot_bar_error(X,U,start,stop):
 
 def plot_AMR_errors(save=False):
     """Convergence plot from AMR."""
-    h = 1/(M_2+1)
     plt.plot(M_1, disc_error_1, label="$e_\ell^r$ (3 point stencil)",color='red',marker='o',linewidth=2)
     plt.plot(M_1, cont_error_1, label="$e_L^r$ (3 point stencil)",color='red',linestyle="--",marker='o',linewidth=2)
     plt.plot(M_2, disc_error_2, label="$e_\ell^r$ (4 point stencil)",color='blue',marker='o',linewidth=2)
@@ -323,6 +322,6 @@ steps = 16
 U_1, X_1, disc_error_1, cont_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
 U_2, X_2, disc_error_2, cont_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second)
 
-#plot_AMR_errors(save = True)
+#plot_AMR_errors()
 
 #plot_bar_error(X_1,U_1,0,steps)
