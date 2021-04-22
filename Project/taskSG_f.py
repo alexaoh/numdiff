@@ -8,6 +8,8 @@ from utilities import plot_order
 from scipy.integrate import quad, quadrature #what is the diff. between those two?
 from scipy.interpolate import interp1d 
 from plotting_utilities import plot3d_sol_part2
+import time
+
 
 def num_solution(M, N, method): #May consider generalizing the func. in d&e) to handle input of B.C-functions, but it's less efficient.
     """RK4 or RKN34 solution, solved with 'method' step.
@@ -64,7 +66,7 @@ T = 4
 x = np.linspace(-2,2,M+2)
 t = np.linspace(0,4,N+1)
 U,_ = num_solution(M, N, RK4_step)
-plot3d_sol_part2(x,t,U)
+#plot3d_sol_part2(x,t,U)
 
 def calc_E(x,u,u_t):
     M = len(x) - 2
@@ -83,7 +85,7 @@ def calc_E(x,u,u_t):
     return quad(interp_E_x,x[0],x[-1],epsabs=2e-6)[0] #can we change this error?
   
 #What type of refinement are we supposed to do?
-def energy_refinement(M,N,method,savename=False):
+def energy_refinement(M, N, method, plot = False, savename = False):
 
     if np.ndim(M) == 0:
         M = np.ones_like(N)*M
@@ -93,29 +95,55 @@ def energy_refinement(M,N,method,savename=False):
         assert(len(M)==len(N))
     
     energy_diff = np.zeros(len(M))
+    time_elapsed = np.zeros(len(M)) # For saving the computational times.
     for i in range(len(M)):
         x = np.linspace(-2,2,M[i]+2)
+        time_start = time.time()
         U, U_t = num_solution(M[i],N[i],method)
+        time_elapsed[i] = time.time() - time_start
         E_0 = calc_E(x,U[0],U_t[0])
         E_end = calc_E(x,U[-1],U_t[-1])
         energy_diff[i] = np.abs(E_end - E_0)/E_0
     
+
+
     Ndof = M*N
-    #Maybe we need more plots in the same figure?
-    plt.plot(Ndof, energy_diff, label=r"$\Delta E$", color='red', marker = 'o')
-    plot_order(Ndof, energy_diff[0], 2, label=r"$\mathcal{O}(N_{dof}^{-2})$", color="red")
-    plt.suptitle('RK4')
-    
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.xlabel(r"$M \cdot N$")
-    plt.ylabel(r"$\Delta E$")
+    if plot:
+        #Maybe we need more plots in the same figure?
+        plt.plot(Ndof, energy_diff, label=r"$\Delta E$", color='red', marker = 'o')
+        plot_order(Ndof, energy_diff[0], 2, label=r"$\mathcal{O}(N_{dof}^{-2})$", color="red")
+        plt.suptitle('RK4')
+        
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.xlabel(r"$M \cdot N$")
+        plt.ylabel(r"$\Delta E$")
+        plt.legend()
+        plt.grid()
+        if savename:
+            plt.savefig(savename+".pdf")
+        plt.show()
+
+    return time_elapsed, Ndof
+
+
+def comp_time(M, N):
+    """Calculates the elapsed time when using the methods RK4 and RKN34 and plots the time."""
+    time_RK4, Ndof = energy_refinement(M, N, RK4_step)
+    time_RKN34, Ndof = energy_refinement(M, N, RKN34_step)
+    plt.plot(Ndof, time_RK4, label = "RK4")
+    plt.plot(Ndof, time_RKN34, label = "RKN34")
+
+    plt.xlabel("$M \cdot N$")
+    plt.ylabel("time (seconds)")
     plt.legend()
-    plt.grid()
-    if savename:
-        plt.savefig(savename+".pdf")
     plt.show()
 
-M = np.array([40,80,160,320,500])
+
+M = np.array([40, 80, 160, 320, 500])
 N = 1200
-#energy_refinement(M,N,RK4_step)
+#energy_refinement(M, N, RK4_step, plot = True)
+comp_time(M,N)
+
+
+
