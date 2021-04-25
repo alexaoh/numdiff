@@ -60,13 +60,6 @@ def num_solution(M, N, method): #May consider generalizing the func. in d&e) to 
 
     return U, U_der
 
-N = 400
-M = int(0.7*N)
-T = 4
-x = np.linspace(-2,2,M+2)
-t = np.linspace(0,4,N+1)
-U,_ = num_solution(M, N, RK4_step)
-#plot3d_sol_part2(x,t,U)
 
 def calc_E(x,u,u_t):
     M = len(x) - 2
@@ -83,7 +76,43 @@ def calc_E(x,u,u_t):
     E_x_list = -(1/2)*(u_t**2 + u_x**2) + np.cos(u)
     interp_E_x = interp1d(x,E_x_list,kind='cubic')
     return quad(interp_E_x,x[0],x[-1],epsabs=2e-6)[0] #can we change this error?
-  
+
+def plot_energy(x,u,u_t,savename=False):
+    E = np.zeros(N+1)
+    for i in range(N+1):
+        E[i] = calc_E(x,U[i],U_der[i])
+
+    plt.plot(t,E,color='royalblue',label='$E(t)$')
+    plt.xlabel('$t$')
+    plt.ylabel('Energy')
+    plt.legend(loc='upper center')
+    if savename:
+        plt.savefig(savename + '.pdf')
+    plt.show()
+    
+def plot_sol(x,U,savename=False):
+    plt.plot(x,U[0],color='royalblue',label=r'$u(x,0)$')
+    plt.plot(x,U[-1],color='limegreen',label=r'$u(x,4)$')
+    plt.xlabel('$x$')
+    plt.ylabel('$u(x,t)$')
+    plt.legend()
+    if savename:
+        plt.savefig(savename+'.pdf')
+    plt.show()
+    
+N = 500
+#M = int(0.7*N)
+M = 350
+T = 4
+x = np.linspace(-2,2,M+2)
+t = np.linspace(0,4,N+1)
+U,U_der = num_solution(M, N, RK4_step)
+
+#plot_sol(x,U)
+#plot3d_sol_part2(x,t,U,110)
+#plot_energy(x,U,U_der)
+
+
 #What type of refinement are we supposed to do?
 def energy_refinement(M, N, method, plot = False, savename = False):
 
@@ -140,10 +169,10 @@ def comp_time(M, N):
     plt.show()
 
 
-M = np.array([40, 80, 160, 320, 500])
+M = np.array([40, 80, 160, 320, 400,500,600])
 N = 1200
 #energy_refinement(M, N, RK4_step, plot = True)
-comp_time(M,N)
+#comp_time(M,N)
 
 
 

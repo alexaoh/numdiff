@@ -10,7 +10,7 @@ import numpy.linalg as la
 
 c = 0.5  
 def analytical_solution(x,t):
-    """Analytical solution, choosing c=1/2 and the plus-sign as solution."""
+    """Analytical solution, choosing c=1/2 and the minus-sign as solution."""
     b = (x - c*t)/np.sqrt(1 - c**2)
     return 4*np.arctan(np.exp(-b))
 
@@ -31,12 +31,11 @@ def num_solution(x, t, method):
     # With minus sign in the anal-sol.
     u_1 = lambda x : 4*c*np.exp(-x/np.sqrt(1 - c**2)) / (( np.sqrt(1 - c**2) * (np.exp(-2*x/np.sqrt(1 - c**2)) + 1)))
 
-    
     N = len(t)-1
     M = len(x)-2
     k = t[1] - t[0]
     h = x[1] - x[0]
-    
+
     data = np.array([np.full(M, 1), np.full(M, -2), np.full(M, 1)])/h**2
     diags = np.array([-1, 0, 1])
     Ah = spdiags(data, diags, M, M)
@@ -64,67 +63,96 @@ def num_solution(x, t, method):
 
     return Usol
 
-#Løsningen divergerer når N<M, noe som er feil eller er det bare CFL-condition som spiller inn-evt. dispersion som er problemet.
-#RK2; M/N <= 0.65
-#RK3; M/N <= 1.8
-#RK4; M/N <= 2.6
-#RKN12; ...
-#RKN34; ...
-
-
-M=20; N=10; T = 5
-x = np.linspace(-5,5,M+2)
-t = np.linspace(0,T,N+1)
-U = num_solution(x, t, RK4_step)
-#plot3d_sol_part2(x,t,U,analytical_solution)
-
-
-def refinement(M,N,method,savename=False):
+def refinement(M,N,solvers,colors,labels,savename=False):
     """Performs h- or t-refinement and plots the result."""
     T = 5
-    if np.ndim(M) == 0:
-        M = np.ones_like(N)*M
-    elif np.ndim(N) == 0:
-        N = np.ones_like(M)*N
-    else:
-        assert(len(M)==len(N))
-        
-    err = np.zeros(len(M))
-    err_l2 = np.zeros(len(M))
-    for i in range(len(M)):
-        x = np.linspace(0,10,M[i]+2)
-        t = np.linspace(0,T,N[i]+1) 
-        U = num_solution(x,t,method)
-        u = analytical_solution(x,t[-1])
-        err[i] = e_l(U[-1,:],u)
-        err_l2[i] = la.norm(U[-1,:] - u)
-
-
-        plt.plot(x, U[-1, :], label = "num")
-        plt.plot(x, u, label = "an", linestyle = "--")
-        plt.legend()
-        plt.show()
-
-    Ndof = M*N
-    #Maybe we need more plots in the same figure?
-    plot_order(Ndof, err[0], 2, label=r"$\mathcal{O}(N_{dof}^{-2})$", color="green")
-    plt.plot(Ndof, err, label=r"$e^r_{\ell}$", color='red', marker = 'o')
-    plt.plot(Ndof, err_l2, label=r"$l2$", color='green', marker = 'o')
-    print(err_l2)
-    plt.suptitle('RK4')
+    Ndof = 0
+    err_start = np.zeros(len(solvers))
     
+    if np.ndim(M) == 0: #t-refiement
+        N_ref = 10000
+        x = np.linspace(-5,5,M+2)
+        t_ref = np.linspace(0,T,N_ref+1)
+        assert(N[-1]<N_ref)
+        Ndof = M*N
+        for i, method in enumerate(solvers):
+            U_ref = num_solution(x,t_ref,method)
+            err = np.zeros(len(N))
+            for j, n in enumerate(N):
+                t = np.linspace(0,T,n+1)
+                U = num_solution(x,t,method)
+                err[j] = e_l(U[-1,:],U_ref[-1,:])
+            plt.plot(Ndof, err, label=labels[i], color=colors[i], marker = 'o')
+            err_start[i] = err[0]
+        
+    elif np.ndim(N) == 0:
+        t = np.linspace(0,T,N+1)
+        Ndof = M*N
+        for i, method in enumerate(solvers):
+            err = np.zeros(len(M))
+            for j, m in enumerate(M):
+                x = np.linspace(-5,5,m+2)
+                U = num_solution(x,t,method)
+                u = analytical_solution(x,t[-1])
+                err[j] = e_l(U[-1,:],u)
+            plt.plot(Ndof, err, label=labels[i], color=colors[i], marker = 'o')
+            err_start[i] = err[0]
+    
+    # Change these manually!
+    plot_order(Ndof, err_start[0], 2, label=r"$\mathcal{O}(N_{dof}^{-2})$", color=colors[0])
+    #plot_order(Ndof, err_start[1], 3, label=r"$\mathcal{O}(N_{dof}^{-3})$", color=colors[1])
+    plot_order(Ndof, err_start[2], 4, label=r"$\mathcal{O}(N_{dof}^{-4})$", color=colors[2])
+
     plt.xscale('log')
     plt.yscale('log')
     plt.xlabel(r"$M \cdot N$")
     plt.ylabel(r"Error $e^r_{(\cdot)}$")
+    #plt.legend(loc='upper right',bbox_to_anchor=(0.85, 0.8), ncol=3, fancybox=True, shadow=True)
     plt.legend()
     plt.grid()
     if savename:
         plt.savefig(savename+".pdf")
     plt.show()
+
+
+# ===| Run code below. |=== #
+
+# Plot solution
+M = 50; N=50; T=5
+x = np.linspace(-5,5,M+2)
+t = np.linspace(0,T,N+1)
+U = num_solution(x, t, RK4_step)
+#plot3d_sol_part2(x,t,U,-55,analytical_solution) #savename='part2d_sol'
+
+
+# RK h-refinement
+N = 1000
+M = np.array([32,64,128,256,512])
+solvers = [RK2_step,RK3_step,RK4_step]
+colors = ['red','green', 'blue']
+labels = [r'$e^r_{\ell}$ (RK2)', r'$e^r_{\ell}$ (RK3)',r'$e^r_{\ell}$ (RK4)']
+#refinement(M,N,solvers,colors,labels) #savename='part2_RK_href'
+
+# RK t-refinement
+M_ref = 400
+N = np.array([1000,1500,2000,2500,3000,3500])
+#refinement(M_ref,N,solvers,colors,labels) #savename='part2_RK_tref'
+
+# RKN h-refinement
+N = 10000
+M = np.array([32,64,128,256,512])
+solvers = [RKN12_step,RKN34_step]
+colors = ['red', 'blue']
+labels = [r'$e^r_{\ell}$ (RKN12)', r'$e^r_{\ell}$ (RKN34)']
+#refinement(M,N,solvers,colors,labels) #savename='part2_RKN_href'
+
+# RKN t-refinement
+M_ref = 400
+N = np.array([2000,2500,3000,3500,4000,4500])
+#refinement(M_ref,N,solvers,colors,labels) #savename='part2_RKN_tref'
+
+
     
-#M = np.array([8,16,32,64,128])
-#N = 800
-M = 50
-N = np.array([2**i for i in range(6, 10)])
-refinement(M,N,RK4_step)
+
+
+

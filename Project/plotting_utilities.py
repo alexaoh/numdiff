@@ -28,14 +28,14 @@ def plot3d_sol(U, xv, yv, Uan = False, savename = False):
         plt.savefig(savename+".pdf")
     plt.show()
 
-def plot3d_sol_part2(x,t,U,Uan = False, savename = False):
+def plot3d_sol_part2(x,t,U,angle,Uan = False, savename = False):
     """Plot numerical solution (and optionally analytical solution) for part 2: Sine-Gordon"""
     
     xv, tv = np.meshgrid(x,t)
 
     fig = plt.figure()
     ax = fig.gca(projection="3d")
-    ax.view_init(azim=+110, elev=20)
+    ax.view_init(azim=angle, elev=20)
     surface = ax.plot_surface(xv, tv, U, cmap="seismic") 
     ax.set_xlabel("$x$")
     ax.set_ylabel("$t$")
