@@ -3,7 +3,7 @@
 h and k, i.e. step sizes in x and y respectively, DO NOT have to be equal. 
 """
 from scipy.sparse import diags # Make sparse matrices with scipy.
-import scipy.sparse.linalg
+import scipy.sparse.linalg as sla
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
@@ -100,7 +100,7 @@ class Task3:
         F[M2-1] = -(1/k**2)*np.sin(2*np.pi*point_counter*h)
 
         # Solve linear system.  
-        Usol = scipy.sparse.linalg.spsolve(A, F) 
+        Usol = sla.spsolve(A, F) 
         
         # Next, want to unpack into grids, for plotting.
         x = np.linspace(0, 1, Mx+2)
