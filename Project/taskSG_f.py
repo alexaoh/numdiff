@@ -73,10 +73,11 @@ def calc_E(x,u,u_t):
     B = B.tocsr()
     
     u_x = B.dot(u)/(2*h)
-    E_x_list = -(1/2)*(u_t**2 + u_x**2) + np.cos(u)
+    E_x_list = (1/2)*(u_t**2 + u_x**2) - np.cos(u)  #maybe change this to 1-cos(u) so we get positive energy?
     interp_E_x = interp1d(x,E_x_list,kind='cubic')
-    return quad(interp_E_x,x[0],x[-1],epsabs=2e-6)[0] #can we change this error?
+    return quad(interp_E_x,x[0],x[-1],epsabs=5e-6,limit=100)[0] #can we change this error? - keep recieving IntegrationWarning
 
+    
 def plot_energy(x,u,u_t,savename=False):
     E = np.zeros(N+1)
     for i in range(N+1):
@@ -101,7 +102,6 @@ def plot_sol(x,U,savename=False):
     plt.show()
     
 N = 500
-#M = int(0.7*N)
 M = 350
 T = 4
 x = np.linspace(-2,2,M+2)
@@ -113,9 +113,9 @@ U,U_der = num_solution(M, N, RK4_step)
 #plot_energy(x,U,U_der)
 
 
-#What type of refinement are we supposed to do?
-def energy_refinement(M, N, method, plot = False, savename = False):
-
+def energy_refinement(M, N, solvers, plot = False, savename = False):
+    assert(isinstance(solvers,list))
+    
     if np.ndim(M) == 0:
         M = np.ones_like(N)*M
     elif np.ndim(N) == 0:
@@ -123,25 +123,25 @@ def energy_refinement(M, N, method, plot = False, savename = False):
     else:
         assert(len(M)==len(N))
     
-    energy_diff = np.zeros(len(M))
-    time_elapsed = np.zeros(len(M)) # For saving the computational times.
-    for i in range(len(M)):
-        x = np.linspace(-2,2,M[i]+2)
-        time_start = time.time()
-        U, U_t = num_solution(M[i],N[i],method)
-        time_elapsed[i] = time.time() - time_start
-        E_0 = calc_E(x,U[0],U_t[0])
-        E_end = calc_E(x,U[-1],U_t[-1])
-        energy_diff[i] = np.abs(E_end - E_0)/E_0
-    
-
+    energy_diff = np.zeros((len(solvers),len(M)))
+    time_elapsed = np.zeros((len(solvers),len(M)))
+    for i, method in enumerate(solvers):
+        for j, m in enumerate(M):
+            x = np.linspace(-2,2,m+2)
+            time_start = time.time()
+            U, U_t = num_solution(m,N[j],method)
+            time_elapsed[i,j] = time.time() - time_start
+            E_0 = calc_E(x,U[0],U_t[0])
+            E_end = calc_E(x,U[-1],U_t[-1])
+            energy_diff[i,j] = np.abs(E_end-E_0)/np.abs(E_0)
 
     Ndof = M*N
     if plot:
-        #Maybe we need more plots in the same figure?
-        plt.plot(Ndof, energy_diff, label=r"$\Delta E$", color='red', marker = 'o')
-        plot_order(Ndof, energy_diff[0], 2, label=r"$\mathcal{O}(N_{dof}^{-2})$", color="red")
-        plt.suptitle('RK4')
+        if len(solvers)==2:
+            plt.plot(Ndof, energy_diff[0,:], label=r"$\Delta E$ (RK4)", color='red', marker = 'o')
+            plt.plot(Ndof, energy_diff[1,:], label=r"$\Delta E$ (RKN34)", color='blue', marker = 'o')
+        else:
+            plt.plot(Ndof, energy_diff[0,:], label=r"$\Delta E$", color='red', marker = 'o')
         
         plt.xscale('log')
         plt.yscale('log')
@@ -153,26 +153,31 @@ def energy_refinement(M, N, method, plot = False, savename = False):
             plt.savefig(savename+".pdf")
         plt.show()
 
-    return time_elapsed, Ndof
+    return Ndof, time_elapsed
 
 
-def comp_time(M, N):
+def comp_time(Ndof, times):
     """Calculates the elapsed time when using the methods RK4 and RKN34 and plots the time."""
-    time_RK4, Ndof = energy_refinement(M, N, RK4_step)
-    time_RKN34, Ndof = energy_refinement(M, N, RKN34_step)
-    plt.plot(Ndof, time_RK4, label = "RK4")
-    plt.plot(Ndof, time_RKN34, label = "RKN34")
+    #times, Ndof = energy_refinement(M, N, [RK4_step, RKN34_step])
 
-    plt.xlabel("$M \cdot N$")
+    plt.plot(Ndof, times[0], label = "RK4")
+    plt.plot(Ndof, times[1], label = "RKN34")
+    
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.xlabel(r"$M \cdot N$")
     plt.ylabel("time (seconds)")
     plt.legend()
     plt.show()
 
 
-M = np.array([40, 80, 160, 320, 400,500,600])
-N = 1200
-#energy_refinement(M, N, RK4_step, plot = True)
-#comp_time(M,N)
+#M = np.array([40, 80, 160, 320, 400,500,600])
+M = 2**np.arange(4,13)
+N = 2*M
+solvers = [RK4_step, RKN34_step]
+Ndof, times = energy_refinement(M, N, solvers, plot = True)
+#comp_time(Ndof,times)
 
-
-
+# feilen flater ut pga epsabs i quadrature, rundt 1e-6
+# blir ingen forskjell på error-kurvene når N>>M, rundt N=10000.
+# for tiden; lite forskjell ved k=h refinement, mer når N er stor. 
