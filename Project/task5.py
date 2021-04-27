@@ -101,7 +101,7 @@ def UFEM(N_list, BC, f, anal_sol, x_interval, savename = False):
     plot_order(np.array(N_list), err_list[0], 1, "$O(h)$", color = "green")
 
     plt.title("UFEM")
-    plt.xlabel("$N$")
+    plt.xlabel("$M$")
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()
@@ -177,7 +177,7 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval, savename = False):
     plot_order(np.array(N_list), err_list[0], 2, "$O(h^{2})$", color = "red")
 
     plt.title(str(steps) + '-step AFEM with ' + type + '-error and ' + r'$\alpha =$' + str(alpha))
-    plt.xlabel("$N$")
+    plt.xlabel("$M$")
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()
