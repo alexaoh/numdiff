@@ -102,7 +102,9 @@ def plot_UMR_solution(save = False):
     second_order_num = num_sol_UMR(x,2)
     plt.plot(x_an,u,label="An", color = "blue")
     plt.plot(x, first_order_num, label = "First", linestyle = "dotted", color = "green")
-    plt.plot(x, second_order_num, label = "Second", linestyle = "dotted", color = "red")
+    plt.plot(x, second_order_num, label = "Second", linestyle = "dotted", linewidth = 2, color = "red")
+    plt.xlabel(r"$x$")
+    plt.ylabel(r"$u$")
     plt.legend()
     if save:
         plt.savefig("solutionTask1dUMR.pdf")
@@ -258,6 +260,8 @@ def plot_AMR_solution(num_solver, save = False):
         ax.plot(X[i],U[i],label=str(i), linestyle = "dashed", linewidth = 2.0)
 
     plt.legend()
+    plt.xlabel(r"$x$")
+    plt.ylabel(r"$u$")
     if save:
         if "first" in num_solver.__name__:
             plt.savefig("solutionTask1dAMRFirst.pdf")
