@@ -4,8 +4,6 @@ import numpy.linalg as la
 from scipy.integrate import quad
 import matplotlib.pyplot as plt
 
-#Can we maybe add disc_l2_norm and use that in task 4c (under l_2 norm)? - do it later.
-
 def cont_L2_norm(v, left, right):
     """Continuous L2 norm of v(x) between left and right."""
     assert(callable(v))

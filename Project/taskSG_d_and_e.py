@@ -101,7 +101,7 @@ def refinement(M,N,solvers,colors,labels,savename=False):
     # Change these manually!
     plot_order(Ndof, err_start[0], 2, label=r"$\mathcal{O}(N_{dof}^{-2})$", color=colors[0])
     #plot_order(Ndof, err_start[1], 3, label=r"$\mathcal{O}(N_{dof}^{-3})$", color=colors[1])
-    plot_order(Ndof, err_start[2], 4, label=r"$\mathcal{O}(N_{dof}^{-4})$", color=colors[2])
+    #plot_order(Ndof, err_start[1], 4, label=r"$\mathcal{O}(N_{dof}^{-4})$", color=colors[1])
 
     plt.xscale('log')
     plt.yscale('log')
@@ -118,7 +118,7 @@ def refinement(M,N,solvers,colors,labels,savename=False):
 # ===| Run code below. |=== #
 
 # Plot solution
-M = 50; N=50; T=5
+M = 20; N=20; T=5
 x = np.linspace(-5,5,M+2)
 t = np.linspace(0,T,N+1)
 U = num_solution(x, t, RK4_step)
@@ -139,12 +139,12 @@ N = np.array([1000,1500,2000,2500,3000,3500])
 #refinement(M_ref,N,solvers,colors,labels) #savename='part2_RK_tref'
 
 # RKN h-refinement
-N = 10000
+N = 10000  #change to 15 000?
 M = np.array([32,64,128,256,512])
 solvers = [RKN12_step,RKN34_step]
 colors = ['red', 'blue']
 labels = [r'$e^r_{\ell}$ (RKN12)', r'$e^r_{\ell}$ (RKN34)']
-#refinement(M,N,solvers,colors,labels) #savename='part2_RKN_href'
+refinement(M,N,solvers,colors,labels) #savename='part2_RKN_href'
 
 # RKN t-refinement
 M_ref = 400
