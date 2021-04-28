@@ -56,8 +56,6 @@ sol = num_sol(x, t, RK4_step)
 
 plot_tail(4, 50, sol, x, t)
 
-
-
 # Solve with scipy RK45
 def scipy_solution(x,t0,t_bound):
     """Solves the ODE with scipy's integrated function 
@@ -83,7 +81,3 @@ def scipy_solution(x,t0,t_bound):
     plt.show()
     
 #scipy_solution(x, 0, t[-1]) #Looks about right
-
-
-
-
