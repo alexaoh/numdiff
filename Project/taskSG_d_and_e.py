@@ -139,7 +139,7 @@ N = np.array([1000,1500,2000,2500,3000,3500])
 #refinement(M_ref,N,solvers,colors,labels) #savename='part2_RK_tref'
 
 # RKN h-refinement
-N = 10000  #change to 15 000?
+N = 15000  
 M = np.array([32,64,128,256,512])
 solvers = [RKN12_step,RKN34_step]
 colors = ['red', 'blue']
