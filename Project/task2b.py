@@ -4,14 +4,12 @@ Dirichlet BC u(0,t)=u(1,t)=0, and initial value f(x)=3*sin(2*pi*x)
 First order method; Backward Euler
 Second order; Crank Nicolson
 """
-
 from utilities import *
 from scipy.sparse import spdiags
 from scipy.sparse.linalg import spsolve
 import numpy as np
 from scipy.interpolate import interp1d 
 from plotting_utilities import plot3d_sol_time
-
 
 initial = (lambda x: 3*np.sin(2*np.pi*x))
 

@@ -73,7 +73,7 @@ def calc_error(M, N, filename, savename=False):
         M = np.ones_like(N)*M
     else:
         assert(len(N)==len(M))
-    modulus = Mstar % M    # Controls that M are divisible by Mstar. This does not apply to N because we look at error in T which is similar for both sol and ref_sol
+    modulus = Mstar % M  # Controls that M are divisible by Mstar. This does not apply to N because we look at error in T which is similar for both sol and ref_sol
     if len(modulus[np.nonzero(modulus)]) != 0:
         print('Wrong M values.')
         return 1
@@ -184,7 +184,6 @@ N = np.array([4,8,16,32,64,128,256])  #does not have to be divisible by Nstar
 M = np.array([8,10,20,25,40,50,100,125,200,250,500])
 N = np.array([8,10,20,25,40,50,100,125,200,250,500])
 #calc_error(M,N,filename)  #gives BE; Ndof^(-1/2) and CN; Ndof^(-1)
-
 
 ### Delete this?? - don't need such refinement
 # r -refinement, keeping r fixed, r=40=M^2/N. Difficult to choose appropriate values

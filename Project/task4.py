@@ -36,7 +36,8 @@ def theta_method_kdv(M,N,T,theta,init):
     down_corner_b = np.concatenate((np.array([0,b]), np.zeros(M-1)))
     down_corner_a = np.concatenate((np.array([0,a,a,a]), np.zeros(M-3)))
     
-    data = np.array([-down_corner_b,-down_corner_a, np.full(M+1,a), np.full(M+1,b), np.full(M+1,-b), np.full(M+1,-a), np.flip(down_corner_a), np.flip(down_corner_b)])
+    data = np.array([-down_corner_b,-down_corner_a, np.full(M+1,a), np.full(M+1,b), 
+                np.full(M+1,-b), np.full(M+1,-a), np.flip(down_corner_a), np.flip(down_corner_b)])
     diags = np.array([-(M-1),-(M-3),-3,-1,1,3,M-3,M-1])
     Q = spdiags(data, diags, M+1, M+1)
     
