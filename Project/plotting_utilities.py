@@ -49,3 +49,4 @@ def plot3d_sol_part2(x,t,U,angle,Uan = False, savename = False):
     if savename:
         plt.savefig(savename+".pdf")
     plt.show()
+    
