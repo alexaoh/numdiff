@@ -16,14 +16,15 @@ def anal_solution(x):
     """Manufactured solution of the Poisson equation with Dirichlet BC."""
     return np.exp(-(1/epsilon)*(x-0.5)**2)
 
-def num_sol_UMR(x,M,order): # order = 1 or 2.
+def num_sol_UMR(x,order): # order = 1 or 2.
     """First order numerical solution of the Possion equation with Dirichlet B.C.,
     given by the manufactured solution. Using a forward difference scheme. 
 
     The parameter 'order' can take values 1 or 2. 
     """
+    M = len(x)-2
+    h = np.diff(x)[0]
     assert(order == 1 or order == 2)
-    h = 1/(M+1)
 
     # Construct Dirichlet boundary condition from manuactured solution.
     alpha = anal_solution(x[0])
@@ -49,40 +50,38 @@ def num_sol_UMR(x,M,order): # order = 1 or 2.
     return Usol
 
 #----------UMR--------------
-M_list = np.linspace(20,1000,20,dtype=int)
-h_list = 1/(M_list+1)
-
-e_1_disc = np.zeros(len(M_list))
-e_2_disc = np.zeros(len(M_list))
-e_1_cont = np.zeros(len(M_list))
-e_2_cont = np.zeros(len(M_list))
-
-for i, m in enumerate(M_list):
-    x = np.linspace(0,1,m+2)
-    u = anal_solution(x)
-    first_order_num = num_sol_UMR(x,m,1)
-    second_order_num = num_sol_UMR(x,m,2)
-
-    # Discrete norms. 
-    e_1_disc[i] = e_l(first_order_num, u)
-    e_2_disc[i] = e_l(second_order_num, u)
-    
-    # Continuous norms. 
-    interpU_first = interp1d(x, first_order_num, kind = 'cubic')
-    interpU_second = interp1d(x, second_order_num, kind = 'cubic')
-
-    e_1_cont[i] = e_L(interpU_first, anal_solution, x[0], x[-1])
-    e_2_cont[i] = e_L(interpU_second, anal_solution, x[0], x[-1])
-
 def plot_UMR_errors(save = False):
     """Convergence plot from UMR."""
+    M_list = 2**np.arange(3,11,dtype=int)
+
+    e_1_disc = np.zeros(len(M_list))
+    e_2_disc = np.zeros(len(M_list))
+    e_1_cont = np.zeros(len(M_list))
+    e_2_cont = np.zeros(len(M_list))
+
+    for i, m in enumerate(M_list):
+        x = np.linspace(0,1,m+2)
+        u = anal_solution(x)
+        first_order_num = num_sol_UMR(x,1)
+        second_order_num = num_sol_UMR(x,2)
+
+        # Discrete norms. 
+        e_1_disc[i] = e_l(first_order_num, u)
+        e_2_disc[i] = e_l(second_order_num, u)
+        
+        # Continuous norms. 
+        interpU_first = interp1d(x, first_order_num, kind = 'cubic')
+        interpU_second = interp1d(x, second_order_num, kind = 'cubic')
+
+        e_1_cont[i] = e_L(interpU_first, anal_solution, x[0], x[-1])
+        e_2_cont[i] = e_L(interpU_second, anal_solution, x[0], x[-1])
+        
     plt.plot(M_list,e_2_cont,label=r"$e^r_{L_2}$ second", color = "black",marker='o')
     plt.plot(M_list,e_1_cont,label=r"$e^r_{L_2}$ first", color = "green",marker='o')
-    plt.plot(M_list,e_1_disc,label=r"$e^r_{l}$ first", color = "red",marker='o',linestyle = "--")
-    plt.plot(M_list,e_2_disc,label=r"$e^r_l$ second", color = "blue",marker='o',linestyle = "--")
-    plt.plot(M_list,7*h_list,label=r"$\mathcal{O}(h)$",linestyle='dashed', color = "red")
-    plt.plot(M_list,10*h_list**2,label=r"$\mathcal{O}(h^2)$",linestyle='dashed', color = "blue")
-    
+    plt.plot(M_list,e_1_disc,label=r"$e^r_{\ell}$ first", color = "red",marker='o',linestyle = "--")
+    plt.plot(M_list,e_2_disc,label=r"$e^r_{\ell}$ second", color = "blue",marker='o',linestyle = "--")
+    plot_order(M_list, e_1_disc[0], 1, r"$\mathcal{O}(h)$", 'red')
+    plot_order(M_list, e_2_disc[0], 2, r"$\mathcal{O}(h^2)$", 'blue')
     plt.ylabel(r"Error $e^r_{(\cdot)}$")
     plt.xlabel("Number of points $M$")
     plt.yscale('log')
@@ -99,11 +98,13 @@ def plot_UMR_solution(save = False):
     x = np.linspace(0,1,M+2)
     x_an = np.linspace(0,1,500) # Plot the analytical solution on a smooth grid. 
     u = anal_solution(x_an) 
-    first_order_num = num_sol_UMR(x,M,1)
-    second_order_num = num_sol_UMR(x,M,2)
+    first_order_num = num_sol_UMR(x,1)
+    second_order_num = num_sol_UMR(x,2)
     plt.plot(x_an,u,label="An", color = "blue")
     plt.plot(x, first_order_num, label = "First", linestyle = "dotted", color = "green")
-    plt.plot(x, second_order_num, label = "Second", linestyle = "dotted", color = "red")
+    plt.plot(x, second_order_num, label = "Second", linestyle = "dotted", linewidth = 2, color = "red")
+    plt.xlabel(r"$x$")
+    plt.ylabel(r"$u$")
     plt.legend()
     if save:
         plt.savefig("solutionTask1dUMR.pdf")
@@ -241,7 +242,7 @@ def plot_AMR_solution(num_solver, save = False):
     assert(callable(num_solver))
     M = 10
     x = np.linspace(0, 1, M+2)
-    steps = 7
+    steps = 15
     U, X, _, _, _= AMR(x,steps,num_solver)
 
     # For colors in plot. 
@@ -252,13 +253,15 @@ def plot_AMR_solution(num_solver, save = False):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.set_prop_cycle(color=colors)
-    ax.plot(X[-1],anal_solution(X[-1]),label="An",color = "black", linewidth = 2.0)
+    x_an = np.linspace(0, 1, 1000)
+    ax.plot(x_an,anal_solution(x_an),label="An",color = "black", linewidth = 2.0)
 
-    for i in range(0,steps+1):
+    for i in range(0,steps+1, 5):
         ax.plot(X[i],U[i],label=str(i), linestyle = "dashed", linewidth = 2.0)
 
-    
     plt.legend()
+    plt.xlabel(r"$x$")
+    plt.ylabel(r"$u$")
     if save:
         if "first" in num_solver.__name__:
             plt.savefig("solutionTask1dAMRFirst.pdf")
@@ -289,10 +292,9 @@ def plot_bar_error(X,U,start,stop):
 
 def plot_AMR_errors(save=False):
     """Convergence plot from AMR."""
-    h = 1/(M_2+1)
-    plt.plot(M_1, disc_error_1, label="$e_l^r$ (3 point stencil)",color='red',marker='o',linewidth=2)
+    plt.plot(M_1, disc_error_1, label="$e_\ell^r$ (3 point stencil)",color='red',marker='o',linewidth=2)
     plt.plot(M_1, cont_error_1, label="$e_L^r$ (3 point stencil)",color='red',linestyle="--",marker='o',linewidth=2)
-    plt.plot(M_2, disc_error_2, label="$e_l^r$ (4 point stencil)",color='blue',marker='o',linewidth=2)
+    plt.plot(M_2, disc_error_2, label="$e_\ell^r$ (4 point stencil)",color='blue',marker='o',linewidth=2)
     plt.plot(M_2, cont_error_2, label="$e_L^r$ (4 point stencil)",color='blue',linestyle="--",marker='o',linewidth=2)
     plot_order(M_1, disc_error_1[0], 1, r"$\mathcal{O}(h)$", 'green')
     plot_order(M_2, disc_error_2[0], 2, r"$\mathcal{O}(h^2)$", 'black')
