@@ -111,9 +111,9 @@ def plot_l2_norm(M,N,T,theta,init,skip,savename=False):
     l2_norm = np.zeros(len(t_skipped))
     l2_norm[:] = la.norm(U[::skip,:],axis=1)/np.sqrt(M+1)
 
-    plt.plot(t_skipped, l2_norm, label=r"$||v||$", color='red')
+    plt.plot(t_skipped, l2_norm, label=r"$||\mathbf{U}||_{\ell_2}$", color='red')
     plt.ylim(0.705,0.709)
-    plt.ylabel(r"$\ell_2$")
+    plt.ylabel(r"$||\cdot||_{\ell_2}$")
     plt.xlabel("$t$")
     plt.legend()
     if savename:
@@ -135,8 +135,6 @@ M = np.array([16,32,64,128,256,512,850])
 M = 800; N=1000; T=10
 #plot_l2_norm(M,N,T,1/2,initial_sine,5)
 #plot_l2_norm(M,N,T,1/2,initial_sine_2,5)
-
-
 
 # ---| Euler method (only for visualization) |--- #
 #plot3d_sol(M,N,T,0,initial_sine)
