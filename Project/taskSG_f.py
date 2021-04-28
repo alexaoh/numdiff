@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.sparse import spdiags
 from integrators import RK4_step, RKN34_step
 from utilities import plot_order
-from scipy.integrate import quad, quadrature #what is the diff. between those two?
+from scipy.integrate import quad, quadrature 
 from scipy.interpolate import interp1d 
 from plotting_utilities import plot3d_sol_part2
 import time
@@ -194,19 +194,15 @@ def comp_time(M,N,solvers,savename=False):
 M = 2**np.arange(5,12)
 solvers = [RK4_step, RKN34_step]
 
-# Bare for å være sikkert: Skal indekseringen på M være der? se kommentarer nedenfor.
-# De skal vel ikke det? Indeksen var der i linje 208, men ikke i den andre linjene. 
-# Forskjellene i resultatene blir vesentlige ;)
-
-N = 1.5*M# [-1]
+N = 1.5*M
 N = np.array(N,dtype=int)
 energy_refinement(M, N, solvers, plot = True)
 
-N = 2*M# [-1]
+N = 2*M
 N = np.array(N,dtype=int)
 energy_refinement(M, N, solvers, plot = True)
 
-N = 2.5*M # [-1]
+N = 2.5*M
 N = np.array(N,dtype=int)
 energy_refinement(M, N, solvers, plot = True) #savename='part2_Eref_c'
 
