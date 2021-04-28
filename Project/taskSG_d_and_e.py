@@ -28,7 +28,7 @@ def num_solution(x, t, method):
     f_2 = lambda t : analytical_solution(x[-1],t)
     u_0 = lambda x : analytical_solution(x,0)
     #u_1 = lambda x : -4*c*np.exp(x*(1-c**2)**(-1/2))/((1-c**2)**(1/2)*(1 + np.exp(2*x*(1-c**2)**(-1/2))))
-    # With minus sign in the anal-sol.
+    # With negative sign in the anal-sol.
     u_1 = lambda x : 4*c*np.exp(-x/np.sqrt(1 - c**2)) / (( np.sqrt(1 - c**2) * (np.exp(-2*x/np.sqrt(1 - c**2)) + 1)))
 
     N = len(t)-1
@@ -64,12 +64,12 @@ def num_solution(x, t, method):
     return Usol
 
 def refinement(M,N,solvers,colors,labels,savename=False):
-    """Performs h- or t-refinement and plots the result."""
+    """Perform h- or t-refinement and plots the result."""
     T = 5
     Ndof = 0
     err_start = np.zeros(len(solvers))
     
-    if np.ndim(M) == 0: #t-refiement
+    if np.ndim(M) == 0: #t-refinement
         N_ref = 10000
         x = np.linspace(-5,5,M+2)
         t_ref = np.linspace(0,T,N_ref+1)
@@ -150,9 +150,3 @@ refinement(M,N,solvers,colors,labels) #savename='part2_RKN_href'
 M_ref = 400
 N = np.array([2000,2500,3000,3500,4000,4500])
 #refinement(M_ref,N,solvers,colors,labels) #savename='part2_RKN_tref'
-
-
-    
-
-
-

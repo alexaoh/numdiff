@@ -75,9 +75,9 @@ def calc_E(x,u,u_t):
     u_x = B.dot(u)/(2*h)
     E_x_list = (1/2)*(u_t**2 + u_x**2) + 1 - np.cos(u)
     interp_E_x = interp1d(x,E_x_list,kind='cubic')
-    return quad(interp_E_x,x[0],x[-1],epsabs=1e-9,limit=500)[0] #can we change this error? - keep recieving IntegrationWarning
+    #return quad(interp_E_x,x[0],x[-1],epsabs=1e-9,limit=500)[0] #can we change this error? - keep recieving IntegrationWarning
+    return quadrature(interp_E_x, x[0], x[-1], maxiter = 1000)[0]
 
-    
 def plot_energy(x,u,u_t,savename=False):
     E = np.zeros(N+1)
     for i in range(N+1):
@@ -194,22 +194,26 @@ def comp_time(M,N,solvers,savename=False):
 M = 2**np.arange(5,12)
 solvers = [RK4_step, RKN34_step]
 
-N = 1.5*M
-N = np.array(N,dtype=int)
-#energy_refinement(M, N, solvers, plot = True)
+# Bare for å være sikkert: Skal indekseringen på M være der? se kommentarer nedenfor.
+# De skal vel ikke det? Indeksen var der i linje 208, men ikke i den andre linjene. 
+# Forskjellene i resultatene blir vesentlige ;)
 
-N = 2*M
+N = 1.5*M# [-1]
 N = np.array(N,dtype=int)
-#energy_refinement(M, N, solvers, plot = True)
+energy_refinement(M, N, solvers, plot = True)
 
-N = 2.5*M[-1]
+N = 2*M# [-1]
 N = np.array(N,dtype=int)
-#energy_refinement(M, N, solvers, plot = True) #savename='part2_Eref_c'
+energy_refinement(M, N, solvers, plot = True)
+
+N = 2.5*M # [-1]
+N = np.array(N,dtype=int)
+energy_refinement(M, N, solvers, plot = True) #savename='part2_Eref_c'
 
 # --Compute Time Spent--
 M = 2**np.arange(5,13)
 
-# Use k=ch refinement with high M,N
+# Use k=ch refinement with large M,N
 N = 2*M
 #comp_time(M,N,solvers)
 
