@@ -6,7 +6,7 @@ from scipy.sparse.linalg import spsolve
 import numpy as np
 import pickle # To save the reference solution.
 from utilities import *
-from plotting_utilities import plot3d_sol_2a
+from plotting_utilities import plot3d_sol_time
 
 initial = (lambda x: 2*np.pi*x - np.sin(2*np.pi*x))
 
@@ -73,7 +73,7 @@ def calc_error(M, N, filename, savename=False):
         M = np.ones_like(N)*M
     else:
         assert(len(N)==len(M))
-    modulus = Mstar % M    # Controls that M are divisible by Mstar. This does not apply to N because we look at error in T which is similar for both sol and ref_sol
+    modulus = Mstar % M  # Controls that M are divisible by Mstar. This does not apply to N because we look at error in T which is similar for both sol and ref_sol
     if len(modulus[np.nonzero(modulus)]) != 0:
         print('Wrong M values.')
         return 1
@@ -162,7 +162,7 @@ M=50; N=50; T=0.2
 x = np.linspace(0,1,M+1)
 t = np.linspace(0,T,N+1)
 sol = calc_sol(x,t,2,1/2)
-#plot3d_sol_2a(sol,x,t)
+#plot3d_sol_time(sol,x,t,-130,15)
 
 # ---| Compare firts and second order disc. of BCs. |--- # 
 N = 1000
@@ -180,14 +180,13 @@ M = 1000
 N = np.array([4,8,16,32,64,128,256])  #does not have to be divisible by Nstar
 #calc_error(M,N,filename)  
 
-
-### Unsure if the refinements below should be included.
-# ---| r -refinement, here both M and N increases. |--- #
+# ---| h=ck -refinement, here both M and N increases. |--- #
 M = np.array([8,10,20,25,40,50,100,125,200,250,500])
 N = np.array([8,10,20,25,40,50,100,125,200,250,500])
 #calc_error(M,N,filename)  #gives BE; Ndof^(-1/2) and CN; Ndof^(-1)
 
+### Delete this?? - don't need such refinement
 # r -refinement, keeping r fixed, r=40=M^2/N. Difficult to choose appropriate values
 M = np.array([20,25,40,50,100,125,200])
 N = np.array([10,16,40,63,250,391,1000]) 
-#calc_error(M,N,filename)  #gives something weird :=O
+#calc_error(M,N,filename) 
