@@ -9,16 +9,15 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from utilities import *
 
-
 class FEM_sol:
-    """
-    A class which represents the FEM solution.
-    This is necesssary in order to incorporate the coefficeints
+    """A class which represents the FEM solution.
+    This is necessary in order to incorporate the coefficients
     in the solution function u_h(x).
     """
     def __init__(self, coeff, x_grid):
         self.coeff = coeff
         self.x_grid = x_grid
+
     def uh(self, x):
         index = 0
         for i in range(len(self.x_grid) - 1): # Probably more effective with a bisection method.
@@ -32,7 +31,7 @@ class FEM_sol:
         return left + right
 
 def gauss(deg, f, a, b):
-    """Performs Gaussian quadrature on f over the interval [a,b] with deg sample points/weights."""
+    """Perform Gaussian quadrature on f over the interval [a,b] with deg sample points/weights."""
     [x, w] = np.polynomial.legendre.leggauss(deg)
     Q = 0.5*(b - a)*sum(w*f(0.5*(b - a)*x + 0.5*(b + a)))
     return Q
@@ -52,7 +51,6 @@ def FEM_solver_Dirichlet(BC, f, x):
         v2 = lambda z: (z -x[i]) * f(z)
         rhs[i:(i+2)] += 1/(x[i + 1] - x[i]) * np.array([gauss(5, v1, x[i], x[i +1]), gauss(5, v2, x[i], x[i + 1])])
 
-    #This could prabably be coded more efficiently
     BC_vec = np.zeros(N)
     BC_vec[0] = BC[0]
     BC_vec[-1] = BC[1]
@@ -63,15 +61,15 @@ def FEM_solver_Dirichlet(BC, f, x):
     A = A[1:-1,1:-1]
     rhs = rhs[1:-1]
 
-    # Solve system
-    u = la.solve(A, rhs)
+    # Solve system.
+    u = la.solve(A, rhs) 
     u = np.hstack((np.array(BC[0]), u))
     u = np.hstack((u, np.array(BC[1])))
 
     return u
 
 def UFEM(N_list, BC, f, anal_sol, x_interval, savename = False):
-    '''Conducts FEM with uniform refinement in 1D.'''
+    """Conducts FEM with uniform refinement in 1D."""
     err_list = []
 
     for N in N_list:
@@ -79,8 +77,9 @@ def UFEM(N_list, BC, f, anal_sol, x_interval, savename = False):
         U = FEM_solver_Dirichlet(BC, f, x)
         U_interp = interp1d(x, U, kind = 'linear')
         num_sol = FEM_sol(U, x)
-      
-        '''
+
+        # Denne brukes ikke lenger?
+        ''' 
         plt.plot(x, U_interp(x), label = "interp", marker = 'o')
         x2 = np.linspace(x_interval[0], x_interval[1], 3*N)
         for xi in x2:
@@ -112,7 +111,7 @@ def UFEM(N_list, BC, f, anal_sol, x_interval, savename = False):
 
 # AFEM:
 def calc_cell_errors(U, u, x):
-    """Calulculates the error for each cell by taking the L_2 norm. Used in AFEM."""
+    """Calculates the error for each cell by taking the L_2 norm. Used in AFEM."""
     n = len(x) - 1 # Number of cells
     cell_errors = np.zeros(n)
 
@@ -135,6 +134,7 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval, savename = False):
 
         cell_errors = calc_cell_errors(num_sol.uh, anal_sol, x)
         
+        # Denne brukes ikke lenger?
         '''
         plt.plot(x, U_interp(x), label = "interp", marker = 'o')
         x2 = np.linspace(x_interval[0], x_interval[1], 3*N)
@@ -168,6 +168,7 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval, savename = False):
             k += 1
         x = np.array(x)
 
+        # Brukes denne? Til å plotte histogram?
         '''
         plt.bar([i for i in range(len(cell_errors))], cell_errors)
         plt.scatter(x, np.zeros(len(x)), s = 1)
@@ -239,7 +240,6 @@ N0 = 20
 #plot_and_save(anal_sol, f, BC, N_list, N0, steps, "5d")
 
 
-
 ## e)
 anal_sol = lambda x: -x**(2/3) + 2*x
 f = lambda x: - 2/9 * x**(-4/3)
@@ -250,10 +250,3 @@ N_list = [2**i for i in range(3, 12)]
 steps = 7
 N0 = 20
 #plot_and_save(anal_sol, f, BC, N_list, N0, steps, "5e")
-
-
-
-
-
-
-
