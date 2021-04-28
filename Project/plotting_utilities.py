@@ -49,3 +49,4 @@ def plot3d_sol_2b(U, x, t, Uan = False, savename = False):
     if savename:
         plt.savefig(savename+".pdf")
     plt.show()
+    
