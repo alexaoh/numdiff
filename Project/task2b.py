@@ -10,8 +10,7 @@ from scipy.sparse import spdiags
 from scipy.sparse.linalg import spsolve
 import numpy as np
 from scipy.interpolate import interp1d 
-from scipy.integrate import quad
-from plotting_utilities import plot3d_sol_2b
+from plotting_utilities import plot3d_sol_time
 
 
 initial = (lambda x: 3*np.sin(2*np.pi*x))
@@ -109,7 +108,7 @@ M=20; N=20; T=0.2
 x = np.linspace(0,1,M+2)
 t = np.linspace(0,T,N+1)
 U = theta_method(x,t,1/2)
-#plot3d_sol_2b(U,x,t,analytic_solution)
+#plot3d_sol_time(U,x,t,55,15,analytic_solution)
 
 
 # ---| h-refinement. |--- # 

@@ -7,9 +7,8 @@ import matplotlib.pyplot as plt
 from scipy.sparse import spdiags,identity
 from scipy.sparse.linalg import spsolve
 import numpy.linalg as la
-from mpl_toolkits.mplot3d import Axes3D
 from utilities import e_l, plot_order
-
+from plotting_utilities import plot3d_sol_time
 
 def analytical_solution(x,t):
     """Analytical solution to the problem."""
@@ -47,29 +46,6 @@ def theta_method_kdv(M,N,T,theta,init):
         rhs = matrix @ U[n,:]
         U[n+1,:] = spsolve(lhs,rhs)
     return U
-
-def plot3d_sol(M,N,T,theta,init,Uan = False, savename = False):
-    """Plot numerical solution (and optionally analytical solution)"""
-    x = np.linspace(-1,1,M+1)
-    t = np.linspace(0,T,N+1)
-    xv, tv = np.meshgrid(x,t)
-    U = theta_method_kdv(M,N,T,theta,init)
-
-    fig = plt.figure()
-    ax = fig.gca(projection="3d")
-    ax.view_init(azim=-100, elev=10)
-    surface = ax.plot_surface(xv, tv, U, cmap="seismic") 
-    ax.set_xlabel("$x$")
-    ax.set_ylabel("$t$")
-    ax.set_zlabel("Intensity")
-    if callable(Uan):
-        x = np.linspace(-1, 1, 1000)
-        t = np.linspace(0, T, 1000)
-        xv, tv = np.meshgrid(x, t)
-        surface2 = ax.plot_surface(xv, tv, Uan(xv, tv), cmap="Greys", alpha = 0.7)
-    if savename:
-        plt.savefig(savename+".pdf")
-    plt.show()
 
 def disc_convergence_plot(M,theta,init,savename=False):
     """Plot relative l_2 norm at t=1 while the discretization number M increases expnentially."""
@@ -125,7 +101,10 @@ initial_sine_2 = lambda x : np.sin(2*np.pi*x)  #Our own choice of initial condit
 
 # ---| Plot solution |--- #
 M=50; N=50; T=1
-#plot3d_sol(M,N,T,1/2,initial_sine,analytical_solution)
+x = np.linspace(-1,1,M+1)
+t = np.linspace(0,T,N+1)
+U = theta_method_kdv(M,N,T,1/2,initial_sine)
+#plot3d_sol_time(U,x,t,-100,10,analytical_solution)
 
 # ---| Convergence plot |---#
 M = np.array([16,32,64,128,256,512,850])
@@ -135,6 +114,7 @@ M = np.array([16,32,64,128,256,512,850])
 M = 800; N=1000; T=10
 #plot_l2_norm(M,N,T,1/2,initial_sine,5)
 #plot_l2_norm(M,N,T,1/2,initial_sine_2,5)
+
 
 # ---| Euler method (only for visualization) |--- #
 #plot3d_sol(M,N,T,0,initial_sine)

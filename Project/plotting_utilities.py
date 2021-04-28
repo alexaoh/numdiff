@@ -28,47 +28,23 @@ def plot3d_sol(U, xv, yv, Uan = False, savename = False):
         plt.savefig(savename+".pdf")
     plt.show()
 
-def plot3d_sol_2a(U, x, t, Uan = False, savename = False):
-    """Plot numerical solution (and optionally analytical) for task 2b: Heat equation. """
-    # Taken from three_dim_plot and heavily modified later (could be added to utilities or something in the end).
+def plot3d_sol_time(U, x, t, angle, elevation, Uan = False, savename = False):
+    """Plot numerical solution (and optionally analytical) along x- and t-axis. """
     fig = plt.figure()
     ax = fig.gca(projection="3d")
-    ax.view_init(azim=-130, elev=15) # Added some rotation to the figure. 
+
+    ax.view_init(azim=angle, elev=elevation)
     xv, tv = np.meshgrid(x,t)
     surface = ax.plot_surface(xv, tv, U, cmap="seismic") 
     ax.set_xlabel("$x$")
     ax.set_ylabel("$t$")
     ax.set_zlabel("Intensity")
-    #fig.colorbar(surface, shrink=0.5, aspect=5)
+
     if callable(Uan):
-        x =  np.linspace(x[0], x[-1], 1000) # Gives three internal points + boundaries.
+        x = np.linspace(x[0],x[-1],1000)
         t = np.linspace(t[0],t[-1],1000)
         xv, tv = np.meshgrid(x, t)
         surface2 = ax.plot_surface(xv, tv, Uan(xv, tv), cmap="Greys", alpha = 0.7)
-        #fig.colorbar(surface2, shrink=0.5, aspect=5)
-    if savename:
-        plt.savefig(savename+".pdf")
-    plt.show()
-
-def plot3d_sol_2b(U, x, t, Uan = False, savename = False):
-    """Plot numerical solution (and optionally analytical) for task 2b: Heat equation. """
-    # Taken from three_dim_plot and heavily modified later (could be added to utilities or something in the end).
-    fig = plt.figure()
-    ax = fig.gca(projection="3d")
-
-    ax.view_init(azim=55, elev=15) # Added some rotation to the figure. 
-    xv, tv = np.meshgrid(x,t)
-    surface = ax.plot_surface(xv, tv, U, cmap="seismic") 
-    ax.set_xlabel("$x$")
-    ax.set_ylabel("$t$")
-    ax.set_zlabel("Intensity")
-    #fig.colorbar(surface, shrink=0.5, aspect=5)
-    if callable(Uan):
-        x =  np.linspace(x[0], x[-1], 1000) # Gives three internal points + boundaries.
-        t = np.linspace(t[0],t[-1],1000)
-        xv, tv = np.meshgrid(x, t)
-        surface2 = ax.plot_surface(xv, tv, Uan(xv, tv), cmap="Greys", alpha = 0.7)
-        #fig.colorbar(surface2, shrink=0.5, aspect=5)
     if savename:
         plt.savefig(savename+".pdf")
     plt.show()
