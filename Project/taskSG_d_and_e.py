@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.sparse import spdiags
 from integrators import RK2_step, RK3_step, RK4_step, RKN12_step, RKN34_step
 from utilities import e_l, plot_order
-from plotting_utilities import plot3d_sol_part2
-import numpy.linalg as la
+from plotting_utilities import plot3d_sol_time
 
 c = 0.5  
 def analytical_solution(x,t):
@@ -27,8 +26,6 @@ def num_solution(x, t, method):
     f_1 = lambda t : analytical_solution(x[0],t)
     f_2 = lambda t : analytical_solution(x[-1],t)
     u_0 = lambda x : analytical_solution(x,0)
-    #u_1 = lambda x : -4*c*np.exp(x*(1-c**2)**(-1/2))/((1-c**2)**(1/2)*(1 + np.exp(2*x*(1-c**2)**(-1/2))))
-    # With negative sign in the anal-sol.
     u_1 = lambda x : 4*c*np.exp(-x/np.sqrt(1 - c**2)) / (( np.sqrt(1 - c**2) * (np.exp(-2*x/np.sqrt(1 - c**2)) + 1)))
 
     N = len(t)-1
@@ -66,7 +63,7 @@ def num_solution(x, t, method):
 def refinement(M,N,solvers,colors,labels,savename=False):
     """Perform h- or t-refinement and plots the result."""
     T = 5
-    Ndof = 0
+    Ndof = M*N
     err_start = np.zeros(len(solvers))
     
     if np.ndim(M) == 0: #t-refinement
@@ -74,7 +71,6 @@ def refinement(M,N,solvers,colors,labels,savename=False):
         x = np.linspace(-5,5,M+2)
         t_ref = np.linspace(0,T,N_ref+1)
         assert(N[-1]<N_ref)
-        Ndof = M*N
         for i, method in enumerate(solvers):
             U_ref = num_solution(x,t_ref,method)
             err = np.zeros(len(N))
@@ -87,7 +83,6 @@ def refinement(M,N,solvers,colors,labels,savename=False):
         
     elif np.ndim(N) == 0:
         t = np.linspace(0,T,N+1)
-        Ndof = M*N
         for i, method in enumerate(solvers):
             err = np.zeros(len(M))
             for j, m in enumerate(M):
@@ -101,7 +96,7 @@ def refinement(M,N,solvers,colors,labels,savename=False):
     # Change these manually!
     plot_order(Ndof, err_start[0], 2, label=r"$\mathcal{O}(N_{dof}^{-2})$", color=colors[0])
     #plot_order(Ndof, err_start[1], 3, label=r"$\mathcal{O}(N_{dof}^{-3})$", color=colors[1])
-    #plot_order(Ndof, err_start[1], 4, label=r"$\mathcal{O}(N_{dof}^{-4})$", color=colors[1])
+    #plot_order(Ndof, err_start[2], 4, label=r"$\mathcal{O}(N_{dof}^{-4})$", color=colors[2])
 
     plt.xscale('log')
     plt.yscale('log')
@@ -122,8 +117,7 @@ M = 20; N=20; T=5
 x = np.linspace(-5,5,M+2)
 t = np.linspace(0,T,N+1)
 U = num_solution(x, t, RK4_step)
-#plot3d_sol_part2(x,t,U,-55,analytical_solution) #savename='part2d_sol'
-
+#plot3d_sol_time(U,x,t,-55,20,analytical_solution)
 
 # RK h-refinement
 N = 1000
@@ -131,12 +125,12 @@ M = np.array([32,64,128,256,512])
 solvers = [RK2_step,RK3_step,RK4_step]
 colors = ['red','green', 'blue']
 labels = [r'$e^r_{\ell}$ (RK2)', r'$e^r_{\ell}$ (RK3)',r'$e^r_{\ell}$ (RK4)']
-#refinement(M,N,solvers,colors,labels) #savename='part2_RK_href'
+#refinement(M,N,solvers,colors,labels)
 
 # RK t-refinement
 M_ref = 400
 N = np.array([1000,1500,2000,2500,3000,3500])
-#refinement(M_ref,N,solvers,colors,labels) #savename='part2_RK_tref'
+#refinement(M_ref,N,solvers,colors,labels)
 
 # RKN h-refinement
 N = 15000  
@@ -144,9 +138,9 @@ M = np.array([32,64,128,256,512])
 solvers = [RKN12_step,RKN34_step]
 colors = ['red', 'blue']
 labels = [r'$e^r_{\ell}$ (RKN12)', r'$e^r_{\ell}$ (RKN34)']
-refinement(M,N,solvers,colors,labels) #savename='part2_RKN_href'
+#refinement(M,N,solvers,colors,labels)
 
 # RKN t-refinement
 M_ref = 400
 N = np.array([2000,2500,3000,3500,4000,4500])
-#refinement(M_ref,N,solvers,colors,labels) #savename='part2_RKN_tref'
+#refinement(M_ref,N,solvers,colors,labels)

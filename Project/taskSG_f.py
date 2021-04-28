@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 from scipy.sparse import spdiags
 from integrators import RK4_step, RKN34_step
 from utilities import plot_order
-from scipy.integrate import quad, quadrature 
+from scipy.integrate import quad, quadrature
 from scipy.interpolate import interp1d 
-from plotting_utilities import plot3d_sol_part2
+from plotting_utilities import plot3d_sol_time
 import time
 
 
-def num_solution(M, N, method): #May consider generalizing the func. in d&e) to handle input of B.C-functions, but it's less efficient.
+def num_solution(M, N, method):
     """RK4 or RKN34 solution, solved with 'method' step.
     
     Input parameters:
@@ -25,7 +25,6 @@ def num_solution(M, N, method): #May consider generalizing the func. in d&e) to 
     u_1 = lambda x : np.sin(np.pi*x)**4*np.exp(-x**2)
 
     x = np.linspace(-2,2,M+2)
-    #t = np.linspace(0,4,N+1)
     t_i = 1 #the F-function is not dependent upon t, set t equal to 1 (random value)
     h = 4/(M+1)
     k = 4/N
@@ -60,7 +59,6 @@ def num_solution(M, N, method): #May consider generalizing the func. in d&e) to 
 
     return U, U_der
 
-
 def calc_E(x,u,u_t):
     M = len(x) - 2
     h = x[1] - x[0]
@@ -75,13 +73,13 @@ def calc_E(x,u,u_t):
     u_x = B.dot(u)/(2*h)
     E_x_list = (1/2)*(u_t**2 + u_x**2) + 1 - np.cos(u)
     interp_E_x = interp1d(x,E_x_list,kind='cubic')
-    #return quad(interp_E_x,x[0],x[-1],epsabs=1e-9,limit=500)[0] #can we change this error? - keep recieving IntegrationWarning
-    return quadrature(interp_E_x, x[0], x[-1], maxiter = 1000)[0]
+    return quad(interp_E_x,x[0],x[-1],epsabs=1e-16,limit=5000)[0] #can we change this error? - keep recieving IntegrationWarning
+    #return quadrature(interp_E_x, x[0], x[-1],rtol=1e-15,maxiter = 1000)[0]
 
 def plot_energy(x,u,u_t,savename=False):
     E = np.zeros(N+1)
     for i in range(N+1):
-        E[i] = calc_E(x,U[i],U_der[i])
+        E[i] = calc_E(x,u[i],u_t[i])
 
     plt.plot(t,E,color='royalblue',label='$E(t)$')
     plt.xlabel('$t$')
@@ -109,7 +107,7 @@ t = np.linspace(0,T,N+1)
 #U,U_der = num_solution(M, N, RK4_step)
 
 #plot_sol(x,U)
-#plot3d_sol_part2(x,t,U,110)
+#plot3d_sol_time(U,x,t,110,20)
 #plot_energy(x,U,U_der)
 
 
@@ -124,13 +122,10 @@ def energy_refinement(M, N, solvers, plot = False, savename = False):
         assert(len(M)==len(N))
     
     energy_diff = np.zeros((len(solvers),len(M)))
-    #time_elapsed = np.zeros((len(solvers),len(M)))
     for i, method in enumerate(solvers):
         for j, m in enumerate(M):
             x = np.linspace(-2,2,m+2)
-            #time_start = time.time()
             U, U_t = num_solution(m,N[j],method)
-            #time_elapsed[i,j] = time.time() - time_start
             E_0 = calc_E(x,U[0],U_t[0])
             E_end = calc_E(x,U[-1],U_t[-1])
             energy_diff[i,j] = np.abs(E_end-E_0)/np.abs(E_0)
@@ -152,9 +147,6 @@ def energy_refinement(M, N, solvers, plot = False, savename = False):
         if savename:
             plt.savefig(savename+".pdf")
         plt.show()
-
-    #return Ndof, time_elapsed
-
 
 def comp_time(M,N,solvers,savename=False):
     """Calculates the elapsed time when using the methods RK4 and RKN34 and plots the time."""
@@ -191,20 +183,21 @@ def comp_time(M,N,solvers,savename=False):
 
 
 # --Energy refinement k=ch--
-M = 2**np.arange(5,12)
+M = 2**np.arange(5,12) #14 can be used
+#M = np.linspace(600,800,20,dtype=int)
 solvers = [RK4_step, RKN34_step]
 
 N = 1.5*M
 N = np.array(N,dtype=int)
-energy_refinement(M, N, solvers, plot = True)
+#energy_refinement(M, N, solvers, plot = True)
 
 N = 2*M
 N = np.array(N,dtype=int)
-energy_refinement(M, N, solvers, plot = True)
+#energy_refinement(M, N, solvers, plot = True)
 
 N = 2.5*M
 N = np.array(N,dtype=int)
-energy_refinement(M, N, solvers, plot = True) #savename='part2_Eref_c'
+#energy_refinement(M, N, solvers, plot = True) #savename='part2_Eref_c'
 
 # --Compute Time Spent--
 M = 2**np.arange(5,13)
