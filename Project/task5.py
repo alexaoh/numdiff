@@ -241,12 +241,12 @@ N0 = 20
 
 
 ## e)
-anal_sol = lambda x: -x**(2/3) + 2*x
-f = lambda x: - 2/9 * x**(-4/3)
+anal_sol = lambda x: x**(2/3) 
+f = lambda x:  2/9 * x**(-4/3)
 x_interval = [0, 1]
 BC = [0, 1]
 N_list = [2**i for i in range(3, 12)]
 # For AFEM:
 steps = 7
 N0 = 20
-#plot_and_save(anal_sol, f, BC, N_list, N0, steps, "5e")
+plot_and_save(anal_sol, f, BC, N_list, N0, steps, "5e")
