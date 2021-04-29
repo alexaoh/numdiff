@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.sparse import spdiags
 from integrators import RK4_step, RKN34_step
 from utilities import plot_order
-from scipy.integrate import quad, quadrature
+#from scipy.integrate import quad, quadrature
 from scipy.interpolate import interp1d 
 from plotting_utilities import plot3d_sol_time
 import time
@@ -28,7 +28,7 @@ def num_solution(M, N, method):
     t_i = 1 #the F-function is not dependent upon t, set t equal to 1 (random value)
     h = 4/(M+1)
     k = 4/N
-    
+
     data = np.array([np.full(M, 1), np.full(M, -2), np.full(M, 1)])/h**2
     diags = np.array([-1, 0, 1])
     Ah = spdiags(data, diags, M, M)
@@ -59,6 +59,12 @@ def num_solution(M, N, method):
 
     return U, U_der
 
+def gauss(deg, f, a, b):
+    """Perform Gaussian quadrature on f over the interval [a,b] with deg sample points/weights."""
+    [x, w] = np.polynomial.legendre.leggauss(deg)
+    Q = 0.5*(b - a)*sum(w*f(0.5*(b - a)*x + 0.5*(b + a)))
+    return Q
+
 def calc_E(x,u,u_t):
     M = len(x) - 2
     h = x[1] - x[0]
@@ -73,9 +79,9 @@ def calc_E(x,u,u_t):
     u_x = B.dot(u)/(2*h)
     E_x_list = (1/2)*(u_t**2 + u_x**2) + 1 - np.cos(u)
     interp_E_x = interp1d(x,E_x_list,kind='cubic')
-    return quad(interp_E_x,x[0],x[-1],epsabs=1e-16,limit=5000)[0] #can we change this error? - keep recieving IntegrationWarning
-    #return quadrature(interp_E_x, x[0], x[-1],rtol=1e-15,maxiter = 1000)[0]
 
+    return gauss(2800,interp_E_x,x[0],x[-1])
+    
 def plot_energy(x,u,u_t,savename=False):
     E = np.zeros(N+1)
     for i in range(N+1):
@@ -99,18 +105,6 @@ def plot_sol(x,U,savename=False):
         plt.savefig(savename+'.pdf')
     plt.show()
     
-N = 500
-M = 350
-T = 4
-x = np.linspace(-2,2,M+2)
-t = np.linspace(0,T,N+1)
-#U,U_der = num_solution(M, N, RK4_step)
-
-#plot_sol(x,U)
-#plot3d_sol_time(U,x,t,110,20)
-#plot_energy(x,U,U_der)
-
-
 def energy_refinement(M, N, solvers, plot = False, savename = False):
     assert(isinstance(solvers,list))
     
@@ -120,7 +114,7 @@ def energy_refinement(M, N, solvers, plot = False, savename = False):
         N = np.ones_like(M)*N
     else:
         assert(len(M)==len(N))
-    
+
     energy_diff = np.zeros((len(solvers),len(M)))
     for i, method in enumerate(solvers):
         for j, m in enumerate(M):
@@ -137,7 +131,7 @@ def energy_refinement(M, N, solvers, plot = False, savename = False):
             plt.plot(Ndof, energy_diff[1,:], label=r"$\Delta E$ (RKN34)", color='blue', marker = 'o')
         else:
             plt.plot(Ndof, energy_diff[0,:], label=r"$\Delta E$", color='red', marker = 'o')
-        
+
         plt.xscale('log')
         plt.yscale('log')
         plt.xlabel(r"$M \cdot N$")
@@ -171,7 +165,6 @@ def comp_time(M,N,solvers,savename=False):
     plt.plot(Ndof, time_elapsed[0], label = "RK4", color='red',marker='o')
     plt.plot(Ndof, time_elapsed[1], label = "RKN34", color='blue',marker='o')
     
-    #plt.yscale('log')
     plt.xscale('log')
     plt.xlabel(r"$M \cdot N$")
     plt.ylabel("time (seconds)")
@@ -181,31 +174,30 @@ def comp_time(M,N,solvers,savename=False):
         plt.savefig(savename +'.pdf')
     plt.show()
 
+# ===| Run code below.|=== #
 
-# --Energy refinement k=ch--
-M = 2**np.arange(5,12) #14 can be used
-#M = np.linspace(600,800,20,dtype=int)
+# Plot of numerical solution and energy
+N = 500; M = 350; T = 4
+x = np.linspace(-2,2,M+2)
+t = np.linspace(0,T,N+1)
+U,U_der = num_solution(M, N, RK4_step)
+
+#plot_sol(x,U)
+#plot3d_sol_time(U,x,t,110,20)
+#plot_energy(x,U,U_der) #Obs, takes long time; change deg in Gauss first
+
+# ---Energy refinement k=ch---
+M = 2**np.arange(5,13)
 solvers = [RK4_step, RKN34_step]
 
 N = 1.5*M
 N = np.array(N,dtype=int)
 #energy_refinement(M, N, solvers, plot = True)
 
-N = 2*M
+N = 4*M
 N = np.array(N,dtype=int)
 #energy_refinement(M, N, solvers, plot = True)
 
-N = 2.5*M
-N = np.array(N,dtype=int)
-#energy_refinement(M, N, solvers, plot = True) #savename='part2_Eref_c'
-
-# --Compute Time Spent--
-M = 2**np.arange(5,13)
-
-# Use k=ch refinement with large M,N
-N = 2*M
-#comp_time(M,N,solvers)
-
-# Use high const N
-N = 15000
+# ---Compute Time Spent---
+N = 20000
 #comp_time(M,N,solvers)
