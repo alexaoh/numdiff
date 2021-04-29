@@ -1,0 +1,128 @@
+The mathematical notation and theory used throughout this report is largely gathered from Brynjulf Owren's note, which is specifically intended for this course \cite{Owren}. The notation is defined, and some essential results are highlighted, in this section.
+
+\section{General Notation}
+Most of the problems are solved on either one $x$-axis or on both an $x$-axis and a $t$- or $y$-axis. When these axes are discretized into grids, the uniform step length in the $x$-direction will be denoted by $h$. Moreover, the associated number of nodes in the $x$-direction will usually be denoted by $M$. Likewise, the uniform step length in the $t$-direction or $y$-direction will be denoted by $k$ and the associated number of nodes will usually be denoted by $N$. 
+
+\section{Difference Schemes}
+\label{section_2.2}
+
+Let $f(x)$ be a twice differentiable function. Define the following operators 
+\begin{align*}
+    \Delta f(x) &= f(x + h) - f(x) &&\text{(Forward Difference)}, \\
+    \nabla f(x) &= f(x) - f(x - h) &&\text{(Backward Difference)}, \\
+    \delta f(x) &= f\left(x + \frac{h}{2}\right) - f\left(x - \frac{h}{2}\right) &&\text{(Central Difference)}, \\
+    \mu f(x) &= \frac{1}{2}\left(f\left(x+\frac{h}{2}\right) + f\left(x-\frac{h}{2}\right)\right) &&\text{(Mean Value)}.
+\end{align*}
+These operators can be used to approximate first order derivatives. Expanding the function $f(x)$ in a Taylor series we find
+\begin{equation*}
+    f(x+h) = f(x) + hf'(x) + \frac{h^2}{2}f''(x) + \mathcal{O}(h^3) \Rightarrow \frac{1}{h}\Delta f(x) = f'(x) + \mathcal{O}(h).
+\end{equation*}
+A similar calculation can be done with the backward difference, which gives the same order of truncation error. A second order approximation for the first derivative can be found by
+\begin{equation*}
+\begin{split}
+    f(x+h)-f(x-h) &= \mathcal{O}(h^4) + f(x)+hf'(x) + \frac{h^2}{2}f''(x) + \frac{h^3}{6}f'''(x)\\ - &\left(f(x) - hf'(x)+\frac{h^2}{2}f''(x)-\frac{h^3}{6}f'''(x)\right) = 2hf'(x) + \mathcal{O}(h^3) \\
+    \Rightarrow \frac{1}{2h}(f(x+h)-&f(x-h)) = \frac{1}{h}\mu \delta f(x) = f'(x) + \mathcal{O}(h^2).
+\end{split}
+\end{equation*}
+The following results are highlighted
+
+%\begin{equation}
+%    \frac{1}{h}\Delta f(x) - f'(x) &= \mathcal{O}(h), \\
+%    \frac{1}{h}\nabla f(x) - f'(x) &= \mathcal{O}(h), \\
+%    \frac{1}{h}\mu \delta f(x) - f'(x) &= \mathcal{O}(h^2) \\
+    %f'(x) = \begin{case}
+    %\frac{1}{h} \Delta f(x) + \mathcal{O}(h) \\
+    %\frac{1}{h} \nabla f(x) + \mathcal{O}(h)
+    %\end{case}
+%\end{equation}
+
+\begin{equation}
+\label{Theory_approx_first_derivative}
+  f'(x)=\left\{
+    \begin{array}{ll}
+      \frac{1}{h}\Delta f(x) + \mathcal{O}(h)\\
+      \frac{1}{h}\nabla f(x) + \mathcal{O}(h) \\
+      \frac{1}{h} \mu \delta f(x) + \mathcal{O}(h^2).
+    \end{array}
+  \right.
+\end{equation}
+
+The same operators can be used to define difference schemes to approximate $f''(x)$. The squared operators are 
+
+\begin{equation*}
+    \begin{split}
+        \Delta^2 f(x) &= f(x + 2h) - 2f(x + h) + f(x), \\
+        \nabla^2 f(x) &= f(x) - 2f(x -h) + f(x -2h), \\
+        \delta^2 f(x) &= f(x + h) - 2f(x) + f(x - h).
+    \end{split}
+\end{equation*}
+Using Taylor series for each term $f(x+2h)$ and $f(x+h)$ in the uppermost equation above, gives
+
+\begin{equation*}
+\begin{split}
+    \Delta^2 f(x) &= \mathcal{O}(h^4) + f(x)+2hf'(x)+\frac{4h^2}{2}f''(x) + \frac{8h^3}{6}f'''(x)\\
+    &-2\left(f(x)+hf'(x)+\frac{h^2}{2}f''(x)+\frac{h^3}{6}f'''(x)\right) + f(x) = h^2 f''(x) + \mathcal{O}(h^3) \\ 
+    &\Rightarrow \frac{1}{h^2}\Delta^2 f(x) = f''(x) + \mathcal{O}(h).
+\end{split}
+\end{equation*}
+An analogous expansion can be done with the backward difference, which yields the same order of truncation error. The squared central difference operator leads to
+
+\begin{equation*}
+    \begin{split}
+        \delta^2f(x) &= \mathcal{O}(h^5) + f(x) + hf'(x) + \frac{h^2}{2}f''(x) + \frac{h^3}{6}f^{(3)}(x) +\frac{h^4}{24}f^{(4)}(x)\\
+        &-2f(x) + f(x) -hf'(x) + \frac{h^2}{2}f''(x) - \frac{h^3}{6}f^{(3)}(x) +\frac{h^4}{24}f^{(4)}\\
+        &= h^2f''(x) + \mathcal{O}(h^4) \Rightarrow \frac{1}{h^2} \delta^2 f(x)=f''(x) + \mathcal{O}(h^2).
+    \end{split}
+\end{equation*}
+The results are highlighted here
+
+%\begin{equation}
+%    f''(x) = \frac{1}{h^2} \Delta^2 f(x) + \mathcal{O}(h) = \frac{1}{h^2} \nabla^2 f(x) + \mathcal{O}(h) = \frac{1}{h^2} \delta^2 f(x) + \mathcal{O}(h^2).
+%\end{equation}
+
+\begin{equation}
+\label{Theory_approx_double_derivative}
+  f''(x)=\left\{
+    \begin{array}{ll}
+      \frac{1}{h^2} \Delta^2 f(x) + \mathcal{O}(h)\\
+      \frac{1}{h^2} \nabla^2 f(x) + \mathcal{O}(h) \\
+      \frac{1}{h^2} \delta^2 f(x) + \mathcal{O}(h^2).
+    \end{array}
+  \right.
+\end{equation}
+
+\section{Error Measures}
+\label{errors.section}
+
+In the following, bold characters denote vectors.  
+The discrete $\ell_2$-norm and the continuous $L_2$-norm are defined as
+\begin{align}
+    \|\boldsymbol{V}\|_2 &:= \sqrt{\frac1N \sum_{i=1}^N V_i^2}, \\
+    \|v(x)\|_2 &:= \sqrt{\int_\Omega v^2(x) \mathrm{d}\Omega},
+\end{align}
+respectively, where $\boldsymbol{V} \in \mathbb{R}^N$ and the function $v \in L_2(\Omega)$. Furthermore, the relative errors $e_\ell^r$ and $e_{L_2}^r$ are defined as
+
+\begin{align}
+    e_\ell^r &:= \frac{\|\boldsymbol{u}-\boldsymbol{U}\|_2}{\|\boldsymbol{u}\|_2}, \label{discreteRelativeError} \\
+    e_{L_2}^r &:= \frac{\|u(x)-U(x)\|_2}{\|u(x)\|_2},
+\end{align}
+respectively, where $u(x)$ and $\boldsymbol{u}$ denote analytical solutions, while $U(x)$ and $\boldsymbol{U}$ denote numerical solutions.
+
+Some implementation details in Python regarding the error measures are given. The continuous $L_2$-norm was implemented by interpolating between each grid point with cubic polynomials and using numerical quadrature to integrate the difference between the analytical and the interpolated numerical solution. More precisely, this was implemented in Python by means of \textit{scipy.interpolate.interp1d}, which was used to construct cubic interpolation polynomials, and \textit{scipy.integrate.quad}, which was used as the numerical quadrature.
+
+\section{Adaptive Mesh Refinement}
+\label{adaptive}
+
+In some problems, we will consider grid refinement-approaches where the sub-intervals of a grid are split, i.e. a grid point is added in the middle of the subinterval, only if they satisfy some requirement. These approaches are referred to as Adaptive Mesh Refinement (AMR). Two such approaches will be considered. Firstly, the \textit{average}-error will be used, where at each refinement step the intervals satisfying the inequality
+
+\begin{equation*}
+    \|u - u_h\|_{L_2(I_i)} > \alpha N^{-1} \|u - u_h\|_{L_2(I)},
+\end{equation*}
+
+\noindent will be split. In the above equation, $u$ denotes the exact solution, $u_h$ denotes the numerical solution, $I$ is the whole interval, $I_i$ is the $i$'th  subinterval, $N$ is the total number of sub-intervals and $\alpha \in \mathbb{R}$ is a constant. Secondly, the \textit{max}-error will be used, where at each refinement step the intervals satisfying the inequality
+
+\begin{equation*}
+    \|u - u_h\|_{L_2(I_i)} > \alpha \max_i \|u - u_h\|_{L_2(I_i)}, 
+\end{equation*}
+
+\noindent will be split. 
