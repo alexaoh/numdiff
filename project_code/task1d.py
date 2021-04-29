@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.lib.function_base import interp
 import numpy.linalg as la
 import matplotlib.pyplot as plt
 from utilities import *
@@ -187,13 +188,11 @@ def num_sol_AMR_first(x):
     
     return Usol
 
-def calc_cell_errors(x,u,U):
+def calc_cell_errors(x, u, U):
     """Calculates an error for each cell by interpolation and numeric integration."""
-
     n = len(x) - 1 # Number of cells.
     cell_errors = np.zeros(n)
-    U_interp = interp1d(x, U, kind = "cubic")
-    v =  lambda y: u(y) - U_interp(y)
+    v =  lambda y: u(y) - U(y)
     for i in range(n):
         cell_errors[i] = cont_L2_norm(v, x[i], x[i + 1])
     return cell_errors
@@ -206,21 +205,23 @@ def AMR(x0, steps, num_solver, type):
     M_list = np.zeros(steps+1)
     Usol_M = [num_solver(x0)]
     X_M = [x0]
+
     for k in range(steps):
         M_list[k] = len(X_M[-1])-2
         u = anal_solution(X_M[-1])        
         disc_error[k] = e_l(Usol_M[-1],u)
          
-        interpU = interp1d(X_M[-1], Usol_M[-1], kind = 'linear')
-        cont_error[k] = e_L(interpU, anal_solution, 0, 1)
+        U_interp = interp1d(X_M[-1], Usol_M[-1], kind = 'cubic')
+        cont_error[k] = e_L(U_interp, anal_solution, 0, 1)
 
         x = list(np.copy(X_M[-1]))
-        cell_errors = calc_cell_errors(x, anal_solution, Usol_M[-1])
+        cell_errors = calc_cell_errors(x, anal_solution, U_interp)
+
         tol = None
         if type == 'avg':
-            v = lambda y: anal_solution(y) - interpU(y)
-            tol = 1/len(cell_errors) * cont_L2_norm(v, x[0], x[-1])
-            print(tol)
+            diff = lambda y: anal_solution(y) - U_interp(y)
+            tol = 1/len(cell_errors) * cont_L2_norm(diff, x[0], x[-1]) # This should be good, but gives essentially uniform refinement.
+            #tol = np.average(cell_errors) 
         elif type == 'max':
             tol = 0.7*np.max(cell_errors)
         else:
@@ -231,7 +232,6 @@ def AMR(x0, steps, num_solver, type):
         plt.show()
         
         j = 0 # Index for x in case we insert points.
-
         for i in range(len(cell_errors)):
             if cell_errors[i] > tol:
                 x.insert(j + 1, x[j] + 0.5*(x[j+1] - x[j]))
@@ -254,13 +254,13 @@ def AMR(x0, steps, num_solver, type):
     M_list[-1] = len(X_M[-1])-2
     return Usol_M, X_M, disc_error, cont_error, M_list
 
-def plot_AMR_solution(num_solver, save = False):
+def plot_AMR_solution(num_solver, type, save = False):
     """Plot analytical solution and numerical solution using AMR."""
     assert(callable(num_solver))
     M = 10
     x = np.linspace(0, 1, M+2)
-    steps = 15
-    U, X, _, _, _= AMR(x,steps,num_solver)
+    steps = 8
+    U, X, _, _, _= AMR(x,steps,num_solver, type)
 
     # For colors in plot. 
     name = "tab10"
@@ -286,7 +286,7 @@ def plot_AMR_solution(num_solver, save = False):
             plt.savefig("solutionTask1dAMRSecond.pdf")
     plt.show()
 
-def plot_bar_error(X, U, start, stop):
+def plot_bar_error(X, U, start, stop, type):
     """Plot error at each cell as bar-plot."""
 
     plt.rcParams.update({'font.size': 7})
@@ -295,10 +295,21 @@ def plot_bar_error(X, U, start, stop):
     fig, axs = plt.subplots(rows, cols, sharex=True, figsize=(15,15))
     for i in range(start,stop):    
 
-        u = anal_solution(X[i])   
-        cell_errors = calc_cell_errors(X[i], u, U[i])
+
+        U_interp = interp1d(X[i], U[i], kind = "cubic")   
+        cell_errors = calc_cell_errors(X[i], anal_solution, U_interp)
+
+        tol = None
+        if type == 'avg':
+            diff = lambda y: anal_solution(y) - U_interp(y)
+            tol = np.average(cell_errors) # 1/len(cell_errors) * cont_L2_norm(diff, x[0], x[-1])
+            print(np.average(cell_errors))
+            print(tol)
+        elif type == 'max':
+            tol = 0.7*np.max(cell_errors)
+        else:
+            raise Exception("Unknown type.")
         
-        tol = 1 * np.average(cell_errors)
 
         axs.flatten()[i].plot(X[i][:-1], [tol for j in range(len(cell_errors))],label='tolerance',linestyle='dashed', color = "black") # Average AMR.
         axs.flatten()[i].bar(X[i][:-1], cell_errors, align='edge',label=str(i), width = np.diff(X[i]), fill = False, edgecolor = "royalblue")
@@ -328,7 +339,7 @@ def plot_AMR_errors(M, x0, steps, type, barplot = False, save=False):
     plt.show()
 
     if barplot:
-        plot_bar_error(X_2, U_2, 0, steps)
+        plot_bar_error(X_2, U_2, 0, steps, type)
 
 #====|-----------------|====#
 #====| Run code below. |====#
@@ -337,13 +348,14 @@ def plot_AMR_errors(M, x0, steps, type, barplot = False, save=False):
 #plot_UMR_solution()
 #plot_UMR_errors(barplot = True)
 
-#plot_AMR_solution(num_sol_AMR_first)
-#plot_AMR_solution(num_sol_AMR_second)
+type = 'avg'
+#plot_AMR_solution(num_sol_AMR_first, type)
+#plot_AMR_solution(num_sol_AMR_second, type)
 
 #---plot errors---#
-M = 9
+M = 9   
 x0 = np.linspace(0, 1, M+2)
 steps = 9
 
-plot_AMR_errors(M, x0, steps, 'avg', barplot = True)
+plot_AMR_errors(M, x0, steps, 'max', barplot = True)
 
