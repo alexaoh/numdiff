@@ -78,7 +78,7 @@ def UFEM(N_list, BC, f, anal_sol, x_interval, savename = False):
         U_interp = interp1d(x, U, kind = 'linear')
         num_sol = FEM_sol(U, x)
 
-        # Denne brukes ikke lenger?
+        #  For plotting numerical solution against analytical underway:
         ''' 
         plt.plot(x, U_interp(x), label = "interp", marker = 'o')
         x2 = np.linspace(x_interval[0], x_interval[1], 3*N)
@@ -134,7 +134,7 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval, savename = False):
 
         cell_errors = calc_cell_errors(num_sol.uh, anal_sol, x)
         
-        # Denne brukes ikke lenger?
+        #  For plotting numerical solution against analytical underway:
         '''
         plt.plot(x, U_interp(x), label = "interp", marker = 'o')
         x2 = np.linspace(x_interval[0], x_interval[1], 3*N)
@@ -168,7 +168,7 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval, savename = False):
             k += 1
         x = np.array(x)
 
-        # Brukes denne? Til å plotte histogram?
+        # For plotting the cell errors underway:
         '''
         plt.bar([i for i in range(len(cell_errors))], cell_errors)
         plt.scatter(x, np.zeros(len(x)), s = 1)
