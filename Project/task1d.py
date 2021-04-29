@@ -50,20 +50,25 @@ def num_sol_UMR(x,order): # order = 1 or 2.
     return Usol
 
 #----------UMR--------------
-def plot_UMR_errors(save = False):
+def plot_UMR_errors(save = False, barplot = False):
     """Convergence plot from UMR."""
-    M_list = 2**np.arange(3,11,dtype=int)
+    M_list = 2**np.arange(3,12,dtype=int)
+    X = []
+    U_2 = []
 
     e_1_disc = np.zeros(len(M_list))
     e_2_disc = np.zeros(len(M_list))
     e_1_cont = np.zeros(len(M_list))
     e_2_cont = np.zeros(len(M_list))
 
+
     for i, m in enumerate(M_list):
         x = np.linspace(0,1,m+2)
+        X.append(x)
         u = anal_solution(x)
         first_order_num = num_sol_UMR(x,1)
         second_order_num = num_sol_UMR(x,2)
+        U_2.append(second_order_num)
 
         # Discrete norms. 
         e_1_disc[i] = e_l(first_order_num, u)
@@ -83,7 +88,7 @@ def plot_UMR_errors(save = False):
     plot_order(M_list, e_1_disc[0], 1, r"$\mathcal{O}(h)$", 'red')
     plot_order(M_list, e_2_disc[0], 2, r"$\mathcal{O}(h^2)$", 'blue')
     plt.ylabel(r"Error $e^r_{(\cdot)}$")
-    plt.xlabel("Number of points $M$")
+    plt.xlabel("$M$")
     plt.yscale('log')
     plt.xscale('log')
     plt.legend()
@@ -91,6 +96,10 @@ def plot_UMR_errors(save = False):
     if save:
         plt.savefig("loglogtask1dUMR.pdf")
     plt.show()
+
+    if barplot:
+        plot_bar_error(X, U_2, 0, len(U_2))
+
 
 def plot_UMR_solution(save = False):
     """Plot analytical solution and numerical solution using AMR."""
@@ -178,15 +187,18 @@ def num_sol_AMR_first(x):
     
     return Usol
 
-def calc_cell_errors(u,U):
-    """Calculates an error for each cell by taking the average of the error in the endpoints."""
-    n = len(u) - 1 # Number of cells.
+def calc_cell_errors(x,u,U):
+    """Calculates an error for each cell by interpolation and numeric integration."""
+
+    n = len(x) - 1 # Number of cells.
     cell_errors = np.zeros(n)
+    U_interp = interp1d(x, U, kind = "cubic")
+    v =  lambda y: u(y) - U_interp(y)
     for i in range(n):
-        cell_errors[i] = abs(U[i] - u[i])
+        cell_errors[i] = cont_L2_norm(v, x[i], x[i + 1])
     return cell_errors
 
-def AMR(x0, steps, num_solver): 
+def AMR(x0, steps, num_solver, type): 
     """Mesh refinement 'steps' amount of times. Find the error, x-grid and numerical solution for each step."""
     assert(callable(num_solver))
     disc_error = np.zeros(steps+1)
@@ -199,33 +211,38 @@ def AMR(x0, steps, num_solver):
         u = anal_solution(X_M[-1])        
         disc_error[k] = e_l(Usol_M[-1],u)
          
-        interpU = interp1d(X_M[-1], Usol_M[-1], kind = 'cubic')
+        interpU = interp1d(X_M[-1], Usol_M[-1], kind = 'linear')
         cont_error[k] = e_L(interpU, anal_solution, 0, 1)
 
         x = list(np.copy(X_M[-1]))
-        cell_errors = calc_cell_errors(u, Usol_M[-1])
-        tol = 1 * np.average(cell_errors)
-       
+        cell_errors = calc_cell_errors(x, anal_solution, Usol_M[-1])
+        tol = None
+        if type == 'avg':
+            v = lambda y: anal_solution(y) - interpU(y)
+            tol = 1/len(cell_errors) * cont_L2_norm(v, x[0], x[-1])
+            print(tol)
+        elif type == 'max':
+            tol = 0.7*np.max(cell_errors)
+        else:
+            raise Exception("Unknown type.")
+        
+        plt.bar(x[:-1], cell_errors, width = np.diff(x), align = 'edge', fill = False)
+        plt.scatter(x, tol * np.ones(len(x)))
+        plt.show()
+        
         j = 0 # Index for x in case we insert points.
 
-        # For testing if first or second cell have been refined.
-        firstCell = False
         for i in range(len(cell_errors)):
             if cell_errors[i] > tol:
-                x.insert(j+1, x[j] + 0.5 * (x[j+1] - x[j]))
-                j += 1
-                
-                # Tests to ensure that first and second cell have same length.
-                if i == 0:
-                    firstCell = True
-                    x.insert(j+1, x[j] + 0.5 * (x[j+1] - x[j]))
-                    j += 1
-                if i == 2 and not firstCell:
-                    x.insert(1, x[0] + 0.5 * (x[1] - x[0]))
-                    j += 1
+                x.insert(j + 1, x[j] + 0.5*(x[j+1] - x[j]))
+                j += 1 
             j += 1
-        
-        x = np.array(x)    
+
+        # Tests to check if first two cells have same length.
+        if (x[1] - x[0]) != (x[2] - x[1]):
+            x.insert(1, x[0] + 0.5*(x[1] - x[0]))
+    
+        x = np.array(x) 
         X_M.append(x)
         Usol_M.append(num_solver(x))
         
@@ -269,33 +286,35 @@ def plot_AMR_solution(num_solver, save = False):
             plt.savefig("solutionTask1dAMRSecond.pdf")
     plt.show()
 
-def plot_bar_error(X,U,start,stop):
+def plot_bar_error(X, U, start, stop):
     """Plot error at each cell as bar-plot."""
-    if stop > steps + 1:
-        return 0
-    
-    rows = 4
-    cols = 4
+
+    plt.rcParams.update({'font.size': 7})
+    rows = 3
+    cols = 3
     fig, axs = plt.subplots(rows, cols, sharex=True, figsize=(15,15))
     for i in range(start,stop):    
 
         u = anal_solution(X[i])   
-        cell_errors = calc_cell_errors(u, U[i])
+        cell_errors = calc_cell_errors(X[i], u, U[i])
         
         tol = 1 * np.average(cell_errors)
 
-        axs.flatten()[i].plot(X[i][:-1], [tol for j in range(len(cell_errors))],label='ave',linestyle='dashed') # Average AMR.
-        axs.flatten()[i].bar(X[i][:-1], cell_errors, align='edge',label=str(i), width = np.diff(X[i]))
+        axs.flatten()[i].plot(X[i][:-1], [tol for j in range(len(cell_errors))],label='tolerance',linestyle='dashed', color = "black") # Average AMR.
+        axs.flatten()[i].bar(X[i][:-1], cell_errors, align='edge',label=str(i), width = np.diff(X[i]), fill = False, edgecolor = "royalblue")
     
-    plt.legend()
+    #plt.legend()
     plt.show()
 
-def plot_AMR_errors(save=False):
+def plot_AMR_errors(M, x0, steps, type, barplot = False, save=False):
     """Convergence plot from AMR."""
+    U_1, X_1, disc_error_1, cont_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first, type)
+    U_2, X_2, disc_error_2, cont_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second, type)
+
     plt.plot(M_1, disc_error_1, label="$e_\ell^r$ (3 point stencil)",color='red',marker='o',linewidth=2)
-    plt.plot(M_1, cont_error_1, label="$e_L^r$ (3 point stencil)",color='red',linestyle="--",marker='o',linewidth=2)
+    plt.plot(M_1, cont_error_1, label="$e_{L_2}^r$ (3 point stencil)",color='red',linestyle="--",marker='o',linewidth=2)
     plt.plot(M_2, disc_error_2, label="$e_\ell^r$ (4 point stencil)",color='blue',marker='o',linewidth=2)
-    plt.plot(M_2, cont_error_2, label="$e_L^r$ (4 point stencil)",color='blue',linestyle="--",marker='o',linewidth=2)
+    plt.plot(M_2, cont_error_2, label="$e_{L_2}^r$ (4 point stencil)",color='blue',linestyle="--",marker='o',linewidth=2)
     plot_order(M_1, disc_error_1[0], 1, r"$\mathcal{O}(h)$", 'green')
     plot_order(M_2, disc_error_2[0], 2, r"$\mathcal{O}(h^2)$", 'black')
     plt.ylabel(r"Error $e^r_{(\cdot)}$")
@@ -308,12 +327,15 @@ def plot_AMR_errors(save=False):
         plt.savefig("loglogtask1dAMR.pdf")
     plt.show()
 
+    if barplot:
+        plot_bar_error(X_2, U_2, 0, steps)
+
 #====|-----------------|====#
 #====| Run code below. |====#
 #====|-----------------|====#
 
 #plot_UMR_solution()
-#plot_UMR_errors()
+#plot_UMR_errors(barplot = True)
 
 #plot_AMR_solution(num_sol_AMR_first)
 #plot_AMR_solution(num_sol_AMR_second)
@@ -321,11 +343,7 @@ def plot_AMR_errors(save=False):
 #---plot errors---#
 M = 9
 x0 = np.linspace(0, 1, M+2)
-steps = 16
+steps = 9
 
-U_1, X_1, disc_error_1, cont_error_1, M_1 = AMR(x0,steps,num_sol_AMR_first)
-U_2, X_2, disc_error_2, cont_error_2, M_2 = AMR(x0,steps,num_sol_AMR_second)
+plot_AMR_errors(M, x0, steps, 'avg', barplot = True)
 
-#plot_AMR_errors()
-
-#plot_bar_error(X_1,U_1,0,steps)
