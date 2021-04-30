@@ -30,12 +30,6 @@ class FEM_sol:
          right = self.coeff[index + 1] * (x - self.x_grid[index])/(self.x_grid[index + 1] - self.x_grid[index]) 
          return left + right
         
-def gauss(deg, f, a, b):
-    """Perform Gaussian quadrature on f over the interval [a,b] with deg sample points/weights."""
-    [x, w] = np.polynomial.legendre.leggauss(deg)
-    Q = 0.5*(b - a)*sum(w*f(0.5*(b - a)*x + 0.5*(b + a)))
-    return Q
-
 def FEM_solver_Dirichlet(BC, f, x):
     """General FEM solver with Dirichlet BC."""
     N = len(x)
@@ -77,17 +71,6 @@ def UFEM(N_list, BC, f, anal_sol, x_interval, savename = False):
         U = FEM_solver_Dirichlet(BC, f, x)
         U_interp = interp1d(x, U, kind = 'linear')
         num_sol = FEM_sol(U, x)
-
-        #  For plotting numerical solution against analytical underway:
-        ''' 
-        plt.plot(x, U_interp(x), label = "interp", marker = 'o')
-        x2 = np.linspace(x_interval[0], x_interval[1], 3*N)
-        for xi in x2:
-            plt.plot(xi, num_sol.uh(xi), marker = '.')
-        plt.plot(x, anal_sol(x), label = "anal", linestyle = "dotted")
-        plt.legend()
-        plt.show()
-        '''
     
         # Calculating error.
         diff = lambda x : num_sol.uh(x) - anal_sol(x)
@@ -133,17 +116,6 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval, savename = False):
         num_sol = FEM_sol(U, x)
 
         cell_errors = calc_cell_errors(num_sol.uh, anal_sol, x)
-        
-        #  For plotting numerical solution against analytical underway:
-        '''
-        plt.plot(x, U_interp(x), label = "interp", marker = 'o')
-        x2 = np.linspace(x_interval[0], x_interval[1], 3*N)
-        for xi in x2:
-            plt.plot(xi, num_sol.uh(xi), marker = '.')
-        plt.plot(x, anal_sol(x), label = "anal", linestyle = "dotted")
-        plt.legend()
-        plt.show()
-        '''
     
         # Calculating error.
         diff = lambda x : num_sol.uh(x) - anal_sol(x)
@@ -168,12 +140,6 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval, savename = False):
             k += 1
         x = np.array(x)
 
-        # For plotting the cell errors underway:
-        '''
-        plt.bar([i for i in range(len(cell_errors))], cell_errors)
-        plt.scatter(x, np.zeros(len(x)), s = 1)
-        plt.show()
-        '''
     plt.plot(N_list, err_list, marker = 'o', label = "$||u - u_h||_{L_2}$")
     plot_order(np.array(N_list), err_list[0], 2, "$O(h^{2})$", color = "red")
 
