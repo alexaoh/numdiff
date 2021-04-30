@@ -117,7 +117,7 @@ def energy_refinement(M, N, solvers, savename = False):
             E_0 = calc_E(x,U[0],U_t[0],deg)
             E_end = calc_E(x,U[-1],U_t[-1],deg)
             energy_diff[i,j] = np.abs(E_end-E_0)/np.abs(E_0)
-    #plt.figure(figsize=(10,5))
+  
     Ndof = M*N
     plt.plot(Ndof, energy_diff[0,:], label=r"$\Delta E$ (RK4)", color='red', marker = 'o')
     plt.plot(Ndof, energy_diff[1,:], label=r"$\Delta E$ (RKN34)", color='blue', marker = 'o')
@@ -128,6 +128,7 @@ def energy_refinement(M, N, solvers, savename = False):
     plt.ylabel(r"$\Delta E$")
     plt.legend()
     plt.grid()
+    #plt.tight_layout()
     if savename:
         plt.savefig(savename+".pdf")
     plt.show()
@@ -188,7 +189,7 @@ N = 4*M
 N = np.array(N,dtype=int)
 #energy_refinement(M, N, solvers)
 
-# --- Energy, t-refinement ---
+# --- Energy, k-refinement ---
 M = 200
 N = np.array([400,450,500,600,800,1000,1200,1500])
 #energy_refinement(M, N, solvers)
