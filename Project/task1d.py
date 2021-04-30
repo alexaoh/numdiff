@@ -56,6 +56,8 @@ def plot_UMR_errors(save = False, barplot = False):
     M_list = 2**np.arange(3,12,dtype=int)
     X = []
     U_2 = []
+    cell_error_list = []
+    tol_list = []
 
     e_1_disc = np.zeros(len(M_list))
     e_2_disc = np.zeros(len(M_list))
@@ -70,6 +72,9 @@ def plot_UMR_errors(save = False, barplot = False):
         first_order_num = num_sol_UMR(x,1)
         second_order_num = num_sol_UMR(x,2)
         U_2.append(second_order_num)
+        cell_errors = calc_cell_errors(x, anal_solution, interp1d(x, U_2[-1], kind = 'cubic'))
+        cell_error_list.append(cell_errors)
+        tol_list.append(np.average(cell_errors))
 
         # Discrete norms. 
         e_1_disc[i] = e_l(first_order_num, u)
@@ -99,7 +104,7 @@ def plot_UMR_errors(save = False, barplot = False):
     plt.show()
 
     if barplot:
-        plot_bar_error(X, U_2, 0, len(U_2), type = 'avg')
+        plot_bar_error(X, U_2, 0, len(U_2), cell_error_list, tol_list)
 
 
 def plot_UMR_solution(save = False):
@@ -110,11 +115,11 @@ def plot_UMR_solution(save = False):
     u = anal_solution(x_an) 
     first_order_num = num_sol_UMR(x,1)
     second_order_num = num_sol_UMR(x,2)
-    plt.plot(x_an,u,label="An", color = "blue")
+    plt.plot(x_an,u,label="Analytical", color = "blue")
     plt.plot(x, first_order_num, label = "First", linestyle = "dotted", color = "green")
     plt.plot(x, second_order_num, label = "Second", linestyle = "dotted", linewidth = 2, color = "red")
     plt.xlabel(r"$x$")
-    plt.ylabel(r"$u$")
+    #plt.ylabel(r"$u$")
     plt.legend()
     if save:
         plt.savefig("solutionTask1dUMR.pdf")
@@ -234,11 +239,7 @@ def AMR(x0, steps, num_solver, type):
         else:
             raise Exception("Unknown type.")
         tol_list.append(tol)
-        '''
-        plt.bar(x[:-1], cell_errors, width = np.diff(x), align = 'edge', fill = False)
-        plt.scatter(x, tol * np.ones(len(x)))
-        plt.show()
-        '''
+    
         j = 0 # Index for x in case we insert points.
         for i in range(len(cell_errors)):
             if cell_errors[i] > tol:
@@ -349,5 +350,5 @@ M = 4
 x0 = np.linspace(0, 1, M+2)
 steps = 16
 
-plot_AMR_errors(M, x0, steps, 'avg2', barplot = True)
+#plot_AMR_errors(M, x0, steps, 'avg2', barplot = True)
 
