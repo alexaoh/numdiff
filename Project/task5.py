@@ -149,7 +149,7 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval, savename = False):
         diff = lambda x : num_sol.uh(x) - anal_sol(x)
         err = cont_L2_norm(diff, x[0], x[-1])
         
-        N_list.append(len(x))
+        N_list.append(len(x) - 1)
         err_list.append(err)
 
         if type == 'avg':
