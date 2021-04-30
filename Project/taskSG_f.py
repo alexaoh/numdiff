@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.sparse import spdiags
 from integrators import RK4_step, RKN34_step
-from utilities import plot_order
+from utilities import plot_order, gauss
 from scipy.interpolate import interp1d 
 from plotting_utilities import plot3d_sol_time
 import time
@@ -58,13 +58,7 @@ def num_solution(M, N, method):
 
     return U, U_der
 
-def gauss(deg, f, a, b):
-    """Perform Gaussian quadrature on f over the interval [a,b] with deg sample points/weights."""
-    [x, w] = np.polynomial.legendre.leggauss(deg)
-    Q = 0.5*(b - a)*sum(w*f(0.5*(b - a)*x + 0.5*(b + a)))
-    return Q
-
-def calc_E(x,u,u_t):
+def calc_E(x,u,u_t,deg):
     M = len(x) - 2
     h = x[1] - x[0]
     
@@ -79,12 +73,13 @@ def calc_E(x,u,u_t):
     E_x_list = (1/2)*(u_t**2 + u_x**2) + 1 - np.cos(u)
     interp_E_x = interp1d(x,E_x_list,kind='cubic')
 
-    return gauss(2800,interp_E_x,x[0],x[-1]) 
+    return gauss(deg,interp_E_x,x[0],x[-1]) 
     
 def plot_energy(x,u,u_t,savename=False):
     E = np.zeros(N+1)
+    deg = 500
     for i in range(N+1):
-        E[i] = calc_E(x,u[i],u_t[i])
+        E[i] = calc_E(x,u[i],u_t[i],deg)
 
     plt.plot(t,E,color='royalblue',label='$E(t)$')
     plt.xlabel('$t$')
@@ -104,7 +99,7 @@ def plot_sol(x,U,savename=False):
         plt.savefig(savename+'.pdf')
     plt.show()
     
-def energy_refinement(M, N, solvers, plot = False, savename = False):
+def energy_refinement(M, N, solvers, savename = False):
     assert(isinstance(solvers,list))
     
     if np.ndim(M) == 0:
@@ -113,33 +108,29 @@ def energy_refinement(M, N, solvers, plot = False, savename = False):
         N = np.ones_like(M)*N
     else:
         assert(len(M)==len(N))
-
+    deg = 2800
     energy_diff = np.zeros((len(solvers),len(M)))
     for i, method in enumerate(solvers):
         for j, m in enumerate(M):
             x = np.linspace(-2,2,m+2)
             U, U_t = num_solution(m,N[j],method)
-            E_0 = calc_E(x,U[0],U_t[0])
-            E_end = calc_E(x,U[-1],U_t[-1])
+            E_0 = calc_E(x,U[0],U_t[0],deg)
+            E_end = calc_E(x,U[-1],U_t[-1],deg)
             energy_diff[i,j] = np.abs(E_end-E_0)/np.abs(E_0)
-
+    #plt.figure(figsize=(10,5))
     Ndof = M*N
-    if plot:
-        if len(solvers)==2:
-            plt.plot(Ndof, energy_diff[0,:], label=r"$\Delta E$ (RK4)", color='red', marker = 'o')
-            plt.plot(Ndof, energy_diff[1,:], label=r"$\Delta E$ (RKN34)", color='blue', marker = 'o')
-        else:
-            plt.plot(Ndof, energy_diff[0,:], label=r"$\Delta E$", color='red', marker = 'o')
+    plt.plot(Ndof, energy_diff[0,:], label=r"$\Delta E$ (RK4)", color='red', marker = 'o')
+    plt.plot(Ndof, energy_diff[1,:], label=r"$\Delta E$ (RKN34)", color='blue', marker = 'o')
 
-        plt.xscale('log')
-        plt.yscale('log')
-        plt.xlabel(r"$M \cdot N$")
-        plt.ylabel(r"$\Delta E$")
-        plt.legend()
-        plt.grid()
-        if savename:
-            plt.savefig(savename+".pdf")
-        plt.show()
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel(r"$M \cdot N$")
+    plt.ylabel(r"$\Delta E$")
+    plt.legend()
+    plt.grid()
+    if savename:
+        plt.savefig(savename+".pdf")
+    plt.show()
 
 def comp_time(M,N,solvers,savename=False):
     """Calculate the elapsed time when using the methods RK4 and RKN34 and plots the time."""
@@ -183,20 +174,25 @@ U,U_der = num_solution(M, N, RK4_step)
 
 #plot_sol(x,U)
 #plot3d_sol_time(U,x,t,110,20)
-#plot_energy(x,U,U_der) #Obs, takes long time; change deg in Gauss first
+#plot_energy(x,U,U_der)
 
-# ---Energy refinement k=ch---
+# --- Energy refinement k=ch ---
 M = 2**np.arange(5,13)
 solvers = [RK4_step, RKN34_step]
 
 N = 1.5*M
 N = np.array(N,dtype=int)
-#energy_refinement(M, N, solvers, plot = True)
+#energy_refinement(M, N, solvers)
 
 N = 4*M
 N = np.array(N,dtype=int)
-#energy_refinement(M, N, solvers, plot = True)
+#energy_refinement(M, N, solvers)
+
+# --- Energy, t-refinement ---
+M = 200
+N = np.array([400,450,500,600,800,1000,1200,1500])
+#energy_refinement(M, N, solvers)
 
 # ---Compute Time Spent---
 N = 20000
-#comp_time(M,N,solvers)
+#comp_time(M, N, solvers)
