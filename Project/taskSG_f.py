@@ -1,5 +1,4 @@
-"""Implementation of Task 2f) in part 2 of semester project."""
-
+"""Code for problem 2 f) in part 2 (Sine-Gordon)."""
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.sparse import spdiags
@@ -8,7 +7,6 @@ from utilities import plot_order, gauss
 from scipy.interpolate import interp1d 
 from plotting_utilities import plot3d_sol_time
 import time
-
 
 def num_solution(M, N, method):
     """RK4 or RKN34 solution, solved with 'method' step.
@@ -24,7 +22,7 @@ def num_solution(M, N, method):
     u_1 = lambda x : np.sin(np.pi*x)**4*np.exp(-x**2)
 
     x = np.linspace(-2,2,M+2)
-    t_i = 1 # the F-function is not dependent of t, set t equal to 1 (random value).
+    t_i = 1 # The F-function is not dependent of t, set t equal to 1 (random value).
     h = 4/(M+1)
     k = 4/N
 
@@ -59,6 +57,7 @@ def num_solution(M, N, method):
     return U, U_der
 
 def calc_E(x,u,u_t,deg):
+    """Calculate Energy-integral with Gaussian quadrature."""
     M = len(x) - 2
     h = x[1] - x[0]
     
@@ -76,6 +75,7 @@ def calc_E(x,u,u_t,deg):
     return gauss(deg,interp_E_x,x[0],x[-1]) 
     
 def plot_energy(x,u,u_t,savename=False):
+    """Plot the calculated energy integral."""
     E = np.zeros(N+1)
     deg = 500
     for i in range(N+1):
@@ -90,6 +90,7 @@ def plot_energy(x,u,u_t,savename=False):
     plt.show()
     
 def plot_sol(x,U,savename=False):
+    """Plot numerical solution at t = 0 and t = 4."""
     plt.plot(x,U[0],color='royalblue',label=r'$u(x,0)$')
     plt.plot(x,U[-1],color='limegreen',label=r'$u(x,4)$')
     plt.xlabel('$x$')
@@ -100,6 +101,7 @@ def plot_sol(x,U,savename=False):
     plt.show()
     
 def energy_refinement(M, N, solvers, savename = False):
+    """Refinement of the grid to construct convergence plots for energy."""
     assert(isinstance(solvers,list))
     
     if np.ndim(M) == 0:
@@ -192,7 +194,7 @@ N = np.array(N,dtype=int)
 # --- Energy, k-refinement ---
 M = 200
 N = np.array([400,450,500,600,800,1000,1200,1500])
-#energy_refinement(M, N, solvers)
+energy_refinement(M, N, solvers)
 
 # ---Compute Time Spent---
 N = 20000

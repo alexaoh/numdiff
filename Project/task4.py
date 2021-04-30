@@ -1,6 +1,8 @@
-"""Numerical solution to the linearized Korteweg-De Vries equation solved on x [-1,1] and t [0,T].
+"""Code for problem 4.
 
-The implementation using the Euler method is shown in the bottom of the file and is only for visualization purposes.
+Numerical solution to the linearized Korteweg-De Vries equation solved on x [-1,1] and t [0,T].
+The implementation using the Euler method is shown in the bottom of the file and 
+is only for visualization purposes (numerically unstable).
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,7 +17,7 @@ def analytical_solution(x,t):
     return np.sin(np.pi*(x-t))
 
 def theta_method_kdv(M,N,T,theta,init):
-    """Solves the KdV equation.
+    """Solve the KdV equation.
     
     M, N: measure for number of gridpoints along the x- and t-dirction
     T: end time, run the calculations until t=T.
@@ -32,7 +34,7 @@ def theta_method_kdv(M,N,T,theta,init):
     a = 1/(8*h**3)
     b = c/(2*h) - 3/(8*h**3)
 
-    #Periodic BC
+    # Periodic BC.
     down_corner_b = np.concatenate((np.array([0,b]), np.zeros(M-1)))
     down_corner_a = np.concatenate((np.array([0,a,a,a]), np.zeros(M-3)))
     
@@ -98,7 +100,7 @@ def plot_l2_norm(M,N,T,theta,init,skip,savename=False):
     plt.show()
 
 initial_sine = lambda x : np.sin(np.pi*x)
-initial_sine_2 = lambda x : np.sin(2*np.pi*x)  #Our own choice of initial condition (only used for 4c)
+initial_sine_2 = lambda x : np.sin(2*np.pi*x)  # Our own choice of initial condition (only used for 4c).
 
 # ---| Plot solution |--- #
 M=50; N=50; T=1

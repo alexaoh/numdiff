@@ -1,14 +1,13 @@
-"""Utility functions that is imported when in need of plotting solutions."""
-
+"""Utility functions that are imported when in need of plotting solutions."""
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
 def plot3d_sol(U, xv, yv, Uan = False, savename = False):
-    """Plot numerical solution (and optionally analytical) for task 3: 2D Laplace. """
+    """Plot numerical solution (and optionally analytical) for task 3: 2D Laplace."""
     fig = plt.figure()
     ax = fig.gca(projection="3d")
-    ax.view_init(azim=55, elev=15) # Added some rotation to the figure. 
+    ax.view_init(azim=55, elev=15)
     surface = ax.plot_surface(xv, yv, U, cmap="seismic") 
     ax.set_xlabel("$x$")
     ax.set_ylabel("$y$")
@@ -22,7 +21,7 @@ def plot3d_sol(U, xv, yv, Uan = False, savename = False):
     plt.show()
 
 def plot3d_sol_time(U, x, t, angle, elevation, Uan = False, savename = False):
-    """Plot numerical solution (and optionally analytical) along x- and t-axis. """
+    """Plot numerical solution (and optionally analytical) along x- and t-axis."""
     fig = plt.figure()
     ax = fig.gca(projection="3d")
 

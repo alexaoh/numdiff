@@ -1,4 +1,4 @@
-"""Functions used throughout."""
+"""Functions used throughout the different problems."""
 import numpy as np
 import numpy.linalg as la
 from scipy.integrate import quad

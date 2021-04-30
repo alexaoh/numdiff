@@ -1,5 +1,6 @@
-"""Numerical solution of the 2D Laplace equation, with the given boundary conditions, on the unit square.
+"""Code for problem 3.
 
+Numerical solution of the 2D Laplace equation, with the given boundary conditions, on the unit square.
 h and k, i.e. step sizes in x and y respectively, DO NOT have to be equal. 
 """
 from scipy.sparse import diags # Make sparse matrices with scipy.

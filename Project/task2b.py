@@ -1,4 +1,6 @@
-"""Solves u_t = u_xx on x[0,1], t[0,T] with reference to manufactured solution with UMR with r-refinement.
+"""Code for problem 2 b).
+
+Solve u_t = u_xx on x[0,1], t[0,T] with reference to manufactured solution, with UMR with r-refinement.
 
 Dirichlet BC u(0,t)=u(1,t)=0, and initial value f(x)=3*sin(2*pi*x)
 First order method; Backward Euler
@@ -10,7 +12,6 @@ from scipy.sparse.linalg import spsolve
 import numpy as np
 from scipy.interpolate import interp1d 
 from plotting_utilities import plot3d_sol_time
-
 initial = (lambda x: 3*np.sin(2*np.pi*x))
 
 def analytic_solution(x,t):
@@ -30,13 +31,13 @@ def theta_method(x, t, theta):
     k = t[1] - t[0]
     r = k/h**2
     
-    #Insert boundaries
+    # Insert boundaries. 
     U = np.zeros((N+1,M+2))
     U[0,:] = initial(x)
     U[:,0] = 0
     U[:,-1] = 0
     
-    #Set up the matrices
+    # Set up the matrices.
     data = np.array([np.full(M, (1-theta)*r), np.full(M, 1-2*(1-theta)*r), np.full(M, (1-theta)*r)])
     diags = np.array([-1, 0, 1])
     b = spdiags(data,diags,M,M,format='csr')
@@ -50,7 +51,7 @@ def theta_method(x, t, theta):
     return U
 
 def plot_UMR(M,N,savename=False):
-    """Calculates and plot refinement plots with L_2 and l_2 norm."""
+    """Calculate and plot refinement plots with L_2 and l_2 norm."""
     T = 0.2
     time_index = -1
     if np.ndim(N)==0:
@@ -79,7 +80,7 @@ def plot_UMR(M,N,savename=False):
         cont_err_second[i] = e_L(interp1d(x, U_CN[time_index,:], kind = 'cubic'), analytic_solution_time, x[0], x[-1])
     
     MN = M*N    
-    # These changes for different methods, change it manually!!
+    # These need to be changed manually.
     plot_order(MN, cont_err_first[0], 2/3, label = r"$\mathcal{O}(N_{dof}^{-2/3})$", color = "lime")
     plot_order(MN, cont_err_second[0], 2/3, label = r"$\mathcal{O}(N_{dof}^{-2/3})$", color = "blue")
 

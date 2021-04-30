@@ -1,3 +1,4 @@
+"""Code for problem 1 d)."""
 import numpy as np
 from numpy.lib.function_base import interp
 import numpy.linalg as la
@@ -7,7 +8,6 @@ from scipy.interpolate import interp1d
 import scipy.sparse.linalg as sla
 import scipy.sparse as sp
 from matplotlib.cm import get_cmap
-
 eps = 0.01
 def f(x):
     """Right hand side of 1D Poisson equation."""
@@ -119,7 +119,6 @@ def plot_UMR_solution(save = False):
     plt.plot(x, first_order_num, label = "First", linestyle = "dotted", color = "green")
     plt.plot(x, second_order_num, label = "Second", linestyle = "dotted", linewidth = 2, color = "red")
     plt.xlabel(r"$x$")
-    #plt.ylabel(r"$u$")
     plt.legend()
     if save:
         plt.savefig("solutionTask1dUMR.pdf")
@@ -287,7 +286,6 @@ def plot_AMR_solution(num_solver, type, save = False):
 
     plt.legend()
     plt.xlabel(r"$x$")
-    #plt.ylabel(r"$u$")
     if save:
         if "first" in num_solver.__name__:
             plt.savefig("solutionTask1dAMRFirst.pdf")
@@ -307,7 +305,6 @@ def plot_bar_error(X, U, start, stop, cell_error_list, tol_list):
         axs.flatten()[i].plot(X[i][:-1], [tol_list[i] for j in range(len(cell_error_list[i]))],label='tolerance',linestyle='dashed', color = "black") # Average AMR.
         axs.flatten()[i].bar(X[i][:-1], cell_error_list[i], align='edge',label=str(i), width = np.diff(X[i]), fill = False, edgecolor = "royalblue")
     
-    #plt.legend()
     plt.show()
 
 def plot_AMR_errors(M, x0, steps, type, barplot = False, save=False):
@@ -341,7 +338,7 @@ def plot_AMR_errors(M, x0, steps, type, barplot = False, save=False):
 #plot_UMR_solution()
 #plot_UMR_errors(barplot = True)
 
-type = 'max'
+type = "max"
 #plot_AMR_solution(num_sol_AMR_first, type)
 #plot_AMR_solution(num_sol_AMR_second, type)
 
@@ -351,4 +348,3 @@ x0 = np.linspace(0, 1, M+2)
 steps = 16
 
 #plot_AMR_errors(M, x0, steps, 'avg2', barplot = True)
-

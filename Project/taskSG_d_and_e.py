@@ -1,4 +1,4 @@
-"""Implementation of Task 2d,e) in part 2 of semester project."""
+"""Code for problem 2 d) and e) in part 2 (Sine-Gordon)."""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -93,7 +93,7 @@ def refinement(M,N,solvers,colors,labels,savename=False):
             plt.plot(Ndof, err, label=labels[i], color=colors[i], marker = 'o')
             err_start[i] = err[0]
     
-    # Change these manually!
+    # Change these manually.
     plot_order(Ndof, err_start[0], 2, label=r"$\mathcal{O}(N_{dof}^{-2})$", color=colors[0])
     #plot_order(Ndof, err_start[1], 3, label=r"$\mathcal{O}(N_{dof}^{-3})$", color=colors[1])
     #plot_order(Ndof, err_start[2], 4, label=r"$\mathcal{O}(N_{dof}^{-4})$", color=colors[2])
@@ -102,7 +102,6 @@ def refinement(M,N,solvers,colors,labels,savename=False):
     plt.yscale('log')
     plt.xlabel(r"$M \cdot N$")
     plt.ylabel(r"Error $e^r_{(\cdot)}$")
-    #plt.legend(loc='upper right',bbox_to_anchor=(0.85, 0.8), ncol=3, fancybox=True, shadow=True)
     plt.legend()
     plt.grid()
     if savename:
@@ -112,14 +111,14 @@ def refinement(M,N,solvers,colors,labels,savename=False):
 
 # ===| Run code below. |=== #
 
-# Plot solution
+# Plot solution.
 M = 20; N=20; T=5
 x = np.linspace(-5,5,M+2)
 t = np.linspace(0,T,N+1)
 U = num_solution(x, t, RK4_step)
 #plot3d_sol_time(U,x,t,-55,20,analytical_solution)
 
-# RK h-refinement
+# RK h-refinement.
 N = 1000
 M = np.array([32,64,128,256,512])
 solvers = [RK2_step,RK3_step,RK4_step]
@@ -127,12 +126,12 @@ colors = ['red','green', 'blue']
 labels = [r'$e^r_{\ell}$ (RK2)', r'$e^r_{\ell}$ (RK3)',r'$e^r_{\ell}$ (RK4)']
 #refinement(M,N,solvers,colors,labels)
 
-# RK t-refinement
+# RK t-refinement.
 M_ref = 400
 N = np.array([1000,1500,2000,2500,3000,3500])
 #refinement(M_ref,N,solvers,colors,labels)
 
-# RKN h-refinement
+# RKN h-refinement.
 N = 15000  
 M = np.array([32,64,128,256,512])
 solvers = [RKN12_step,RKN34_step]
@@ -140,7 +139,7 @@ colors = ['red', 'blue']
 labels = [r'$e^r_{\ell}$ (RKN12)', r'$e^r_{\ell}$ (RKN34)']
 #refinement(M,N,solvers,colors,labels)
 
-# RKN t-refinement
+# RKN t-refinement.
 M_ref = 400
 N = np.array([2000,2500,3000,3500,4000,4500])
 #refinement(M_ref,N,solvers,colors,labels)

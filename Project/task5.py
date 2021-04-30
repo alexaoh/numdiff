@@ -1,8 +1,6 @@
-"""Task 5."""
-
+"""Code for problem 5."""
 from scipy.sparse import spdiags # Make sparse matrices with scipy.
 from scipy.sparse.linalg import spsolve 
-from scipy.linalg import toeplitz, solve_toeplitz
 import numpy as np
 import numpy.linalg as la
 from scipy.interpolate import interp1d 
@@ -51,7 +49,7 @@ def FEM_solver_Dirichlet(BC, f, x):
 
     rhs = rhs - A @ BC_vec
 
-    # Implementing BC:
+    # Implementing BC.
     A = A[1:-1,1:-1]
     rhs = rhs[1:-1]
 
@@ -63,18 +61,16 @@ def FEM_solver_Dirichlet(BC, f, x):
     return u
 
 def UFEM(N_list, BC, f, anal_sol, x_interval, savename = False):
-    """Conducts FEM with uniform refinement in 1D."""
+    """Conduct FEM with uniform refinement in 1D."""
     err_list = []
 
     for N in N_list:
         x = np.linspace(x_interval[0], x_interval[1], N)
         U = FEM_solver_Dirichlet(BC, f, x)
-        U_interp = interp1d(x, U, kind = 'linear')
         num_sol = FEM_sol(U, x)
     
         # Calculating error.
         diff = lambda x : num_sol.uh(x) - anal_sol(x)
-        #diff = lambda x : U_interp(x) - anal_sol(x)
         err = cont_L2_norm(diff, x[0], x[-1])
         err_list.append(err)
 
@@ -92,10 +88,10 @@ def UFEM(N_list, BC, f, anal_sol, x_interval, savename = False):
         plt.savefig(savename + ".pdf")
     plt.show()
 
-# AFEM:
+# AFEM.
 def calc_cell_errors(U, u, x):
     """Calculates the error for each cell by taking the L_2 norm. Used in AFEM."""
-    n = len(x) - 1 # Number of cells
+    n = len(x) - 1 # Number of cells.
     cell_errors = np.zeros(n)
 
     for i in range(n):
@@ -105,7 +101,7 @@ def calc_cell_errors(U, u, x):
     return cell_errors
 
 def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval, savename = False):
-    '''Conducts FEM with adaptive refinement in 1D steps times.'''
+    """Conduct FEM with adaptive refinement in 1D steps times."""
     err_list = []
     N_list = []
     x = np.linspace(x_interval[0], x_interval[1], N0)

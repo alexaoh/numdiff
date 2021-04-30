@@ -1,13 +1,10 @@
-#from crank_nicolson import * # 
-#from plot_heat_eqn import * # can delete both plot_heat_eqn and crank-nicolson!!
-
+"""Code for problem 2 a)."""
 from scipy.sparse import spdiags, identity
 from scipy.sparse.linalg import spsolve
 import numpy as np
 import pickle # To save the reference solution.
 from utilities import *
 from plotting_utilities import plot3d_sol_time
-
 initial = (lambda x: 2*np.pi*x - np.sin(2*np.pi*x))
 
 def calc_sol(x, t, order, theta, plot = False):
@@ -21,7 +18,7 @@ def calc_sol(x, t, order, theta, plot = False):
     N = len(t)-1
     
     # Construct Q.
-    data = np.array([np.full(M+1, 1), np.full(M+1, -2), np.full(M+1, 1)]) #shouldn't the dimensions be M+2??
+    data = np.array([np.full(M+1, 1), np.full(M+1, -2), np.full(M+1, 1)])
     diags = np.array([-1, 0, 1])
     Q = spdiags(data, diags, M+1, M+1,format='lil')
     if order == 1:
@@ -57,6 +54,7 @@ def save_ref_sol(Mstar, Nstar, order, theta, filename):
 
 def calc_error(M, N, filename, savename=False): 
     """Calculate the relative error with the reference solution.
+
     Input:
     M: List or scalar depending on the type of refinement.
     N: List or scalar depending on the type of refinement.
@@ -73,7 +71,8 @@ def calc_error(M, N, filename, savename=False):
         M = np.ones_like(N)*M
     else:
         assert(len(N)==len(M))
-    modulus = Mstar % M  # Controls that M are divisible by Mstar. This does not apply to N because we look at error in T which is similar for both sol and ref_sol
+    modulus = Mstar % M  # Controls that M are divisible by Mstar. 
+    # This does not apply to N because we look at error in T which is similar for both sol and ref_sol
     if len(modulus[np.nonzero(modulus)]) != 0:
         print('Wrong M values.')
         return 1
@@ -97,7 +96,7 @@ def calc_error(M, N, filename, savename=False):
     plt.plot(MN, disc_err_first, label = r"$e^r_{\ell}$ (BE)",color='red',marker='o')
     plt.plot(MN, disc_err_second, label = r"$e^r_{\ell}$ (CN)",color='blue',marker='o')
 
-    # These need to be changed manually!
+    # These need to be changed manually.
     plot_order(MN, disc_err_first[0], 1/2, label = r"$\mathcal{O}(N_{dof}^{-1/2})$", color = 'red')
     plot_order(MN, disc_err_second[0], 1, label = r"$\mathcal{O}(N_{dof}^{-1})}$", color='blue')
 
@@ -112,7 +111,7 @@ def calc_error(M, N, filename, savename=False):
     plt.show()
 
 def compare_discr(M, N, filename, savename=False):
-    """Compares the first and second order discretizations of the BCs by making a convergence plot."""
+    """Compare the first and second order discretizations of the BCs by making a convergence plot."""
     ref_sol = None
     with open(filename, 'rb') as fi: 
         ref_sol = pickle.load(fi)
@@ -135,7 +134,7 @@ def compare_discr(M, N, filename, savename=False):
     plt.plot(MN, disc_err_first, label = r"$e^r_{\ell}$ (1st order)",color='red',marker='o')
     plt.plot(MN, disc_err_second, label = r"$e^r_{\ell}$ (2nd order)",color='blue',marker='o')
 
-    # These need to be changed manually!
+    # These need to be changed manually.
     plot_order(MN, disc_err_first[0], 1, label = r"$\mathcal{O}(N_{dof}^{-1})$", color = 'red')
     plot_order(MN, disc_err_second[0], 2, label = r"$\mathcal{O}(N_{dof}^{-2})}$", color='blue')
 
