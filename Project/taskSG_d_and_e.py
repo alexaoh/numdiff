@@ -14,7 +14,7 @@ def analytical_solution(x,t):
     return 4*np.arctan(np.exp(-b))
 
 def num_solution(x, t, method):
-    """Numeric solution using Runge-Kutta or Runge-Kutta-Nystrøm schemes, solved with 'method' step.
+    """Numerical solution using Runge-Kutta or Runge-Kutta-Nystrøm schemes, solved with 'method' step.
     
     Input parameters:
     x: x-grid
@@ -54,7 +54,7 @@ def num_solution(x, t, method):
     
     Usol = Y[:,0,:]
     
-    #Insert B.C
+    # Insert B.C.
     Usol = np.insert(Usol,0,f_1(t),axis=1)
     Usol = np.column_stack((Usol,f_2(t)))
 
@@ -66,7 +66,7 @@ def refinement(M,N,solvers,colors,labels,savename=False):
     Ndof = M*N
     err_start = np.zeros(len(solvers))
     
-    if np.ndim(M) == 0: #t-refinement
+    if np.ndim(M) == 0: # t-refinement.
         N_ref = 10000
         x = np.linspace(-5,5,M+2)
         t_ref = np.linspace(0,T,N_ref+1)

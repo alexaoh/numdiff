@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 from scipy.sparse import spdiags
 from integrators import RK4_step, RKN34_step
 from utilities import plot_order
-#from scipy.integrate import quad, quadrature
 from scipy.interpolate import interp1d 
 from plotting_utilities import plot3d_sol_time
 import time
@@ -25,7 +24,7 @@ def num_solution(M, N, method):
     u_1 = lambda x : np.sin(np.pi*x)**4*np.exp(-x**2)
 
     x = np.linspace(-2,2,M+2)
-    t_i = 1 #the F-function is not dependent upon t, set t equal to 1 (random value)
+    t_i = 1 # the F-function is not dependent of t, set t equal to 1 (random value).
     h = 4/(M+1)
     k = 4/N
 
@@ -47,7 +46,7 @@ def num_solution(M, N, method):
     for i in range(N):
         Y[i+1,:,:] = method(k, t_i, Y[i,:,:], F)
     
-    #Insert B.C
+    # Insert B.C.
     U = Y[:,0,:]
     zeros = np.zeros(N+1)
     U = np.insert(U,0,zeros,axis=1)
@@ -69,7 +68,7 @@ def calc_E(x,u,u_t):
     M = len(x) - 2
     h = x[1] - x[0]
     
-    data = np.array([np.full(M+2, -1), np.full(M+2, 1)]) #maybe it's better differentiate manually with slicing of arrays?
+    data = np.array([np.full(M+2, -1), np.full(M+2, 1)]) # Perhaps it would be better to differentiate manually with slicing of arrays?
     diags = np.array([-1, 1])
     B = spdiags(data, diags, M+2, M+2,format='lil')
     boundary = np.array([3,-4,1])
@@ -80,7 +79,7 @@ def calc_E(x,u,u_t):
     E_x_list = (1/2)*(u_t**2 + u_x**2) + 1 - np.cos(u)
     interp_E_x = interp1d(x,E_x_list,kind='cubic')
 
-    return gauss(2800,interp_E_x,x[0],x[-1])
+    return gauss(2800,interp_E_x,x[0],x[-1]) 
     
 def plot_energy(x,u,u_t,savename=False):
     E = np.zeros(N+1)
@@ -143,7 +142,7 @@ def energy_refinement(M, N, solvers, plot = False, savename = False):
         plt.show()
 
 def comp_time(M,N,solvers,savename=False):
-    """Calculates the elapsed time when using the methods RK4 and RKN34 and plots the time."""
+    """Calculate the elapsed time when using the methods RK4 and RKN34 and plots the time."""
     assert(isinstance(solvers,list))
     
     if np.ndim(M) == 0:

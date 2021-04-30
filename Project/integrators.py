@@ -22,7 +22,7 @@ def RK4_step(k, t_i, y, f):
     return y + (k/6)*(s1 + 2*s2 + 2*s3 + s4)
 
 def RKN12_step(k, t_i, y, f):
-    """One step in RKN-12 method"""
+    """One step in RKN-12 method."""
     s1 = f(t_i, y[0])
     
     y_der_new = y[1] + k*s1
@@ -30,7 +30,7 @@ def RKN12_step(k, t_i, y, f):
     return np.array([y_new, y_der_new])
 
 def RKN34_step(k, t_i, y, f):
-    """One step in RKN-34 method"""
+    """One step in RKN-34 method."""
     delta = (1/12)*(2 - 4**(1/3)-16**(1/3))
     s1 = f(t_i+(1/2-delta)*k, y[0] + (1/2-delta)*k*y[1])
     s2 = f(t_i + (1/2)*k, y[0] + (1/2)*k*y[1]+k**2/(24*delta)*s1)

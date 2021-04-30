@@ -41,6 +41,3 @@ def plot3d_sol_time(U, x, t, angle, elevation, Uan = False, savename = False):
     if savename:
         plt.savefig(savename+".pdf")
     plt.show()
-
-
-    
