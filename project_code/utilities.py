@@ -36,3 +36,9 @@ def plot_order(Ndof, error_start, order, label, color):
     """Plots Ndof^{-order} from error_start."""
     const = (error_start)**(1/order)*Ndof[0]
     plt.plot(Ndof, (const*1/Ndof)**order, label=label, color=color, linestyle='dashed')
+
+def gauss(deg, f, a, b):
+    """Perform Gaussian quadrature on f over the interval [a,b] with deg sample points/weights."""
+    [x, w] = np.polynomial.legendre.leggauss(deg)
+    Q = 0.5*(b - a)*sum(w*f(0.5*(b - a)*x + 0.5*(b + a)))
+    return Q

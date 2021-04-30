@@ -10,26 +10,26 @@ import matplotlib.pyplot as plt
 from utilities import *
 
 class FEM_sol:
-    """A class which represents the FEM solution.
-    This is necessary in order to incorporate the coefficients
-    in the solution function u_h(x).
-    """
-    def __init__(self, coeff, x_grid):
-        self.coeff = coeff
-        self.x_grid = x_grid
+     """A class which represents the FEM solution.
+     This is necessary in order to incorporate the coefficients
+     in the solution function u_h(x).
+     """
+     def __init__(self, coeff, x_grid):
+         self.coeff = coeff
+         self.x_grid = x_grid
 
-    def uh(self, x):
-        index = 0
-        for i in range(len(self.x_grid) - 1): # Probably more effective with a bisection method.
-            if x <= self.x_grid[i + 1]:
-                break
-            else:
-                index += 1
-       
-        left = self.coeff[index] * (self.x_grid[index + 1] - x)/(self.x_grid[index + 1] - self.x_grid[index])
-        right = self.coeff[index + 1] * (x - self.x_grid[index])/(self.x_grid[index + 1] - self.x_grid[index]) 
-        return left + right
+     def uh(self, x): # An alternative to this function is to interpolate the ui values linearly.
+         index = 0
+         for i in range(len(self.x_grid) - 1): # Probably more effective with a bisection method.
+             if x <= self.x_grid[i + 1]:
+                 break
+             else:
+                 index += 1
 
+         left = self.coeff[index] * (self.x_grid[index + 1] - x)/(self.x_grid[index + 1] - self.x_grid[index])
+         right = self.coeff[index + 1] * (x - self.x_grid[index])/(self.x_grid[index + 1] - self.x_grid[index]) 
+         return left + right
+        
 def gauss(deg, f, a, b):
     """Perform Gaussian quadrature on f over the interval [a,b] with deg sample points/weights."""
     [x, w] = np.polynomial.legendre.leggauss(deg)
@@ -149,7 +149,7 @@ def AFEM(N0, steps, alpha, type, f, anal_sol, x_interval, savename = False):
         diff = lambda x : num_sol.uh(x) - anal_sol(x)
         err = cont_L2_norm(diff, x[0], x[-1])
         
-        N_list.append(len(x))
+        N_list.append(len(x) - 1)
         err_list.append(err)
 
         if type == 'avg':
@@ -249,4 +249,4 @@ N_list = [2**i for i in range(3, 12)]
 # For AFEM:
 steps = 7
 N0 = 20
-plot_and_save(anal_sol, f, BC, N_list, N0, steps, "5e")
+#plot_and_save(anal_sol, f, BC, N_list, N0, steps, "5e")
