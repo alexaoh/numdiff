@@ -1,18 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import RK45
-#from integrators import RK4_step
+from integrators import RK4_step
 
 def initial(x):
     return np.exp(-400*(x - 1/2)**2)
-
-def RK4_step(k, t_i, y, f):  #<--- This function can be imported from integrators.py after we merge the files from Part 2
-    '''Used as method in numerical_solution''' 
-    s1 = f(t_i, y)
-    s2 = f(t_i + k/2, y + (k / 2) * s1)  
-    s3 = f(t_i + k/2, y + (k / 2) * s2) 
-    s4 = f(t_i + k, y + k * s3) 
-    return y + (k / 6) * (s1 + (2 * s2) + (2 * s3) + s4)
 
 def num_sol(x, t, method):   #Obs, initial conditions does not fit boundary conditions perfectly
     '''Solves the ODE \dot{v} = f(t,v) with a specified method'''
